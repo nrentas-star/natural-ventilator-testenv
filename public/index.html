@@ -1,0 +1,607 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Natural Ventilator Selector &#8212; Stack Effect</title>
+  <!-- version: v99 -->
+  <style>
+:root{--bg:#ffffff;--card:#ffffff;--surface:#f6f8fb;--surface2:#ffffff;--muted:#5b6b7f;--text:#0f1b2d;--accent:#00589a;--accent2:#58b0e3;--good:#2e7d32;--warn:#b26a00;--bad:#c62828;--border:#d6dde8;--border2:#c5cfdd;--shadow:0 10px 28px rgba(15,27,45,.10)}
+    html,body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,'Helvetica Neue',Arial;background:var(--bg);color:var(--text);font-size:19px}
+    .wrap{max-width:1180px;margin:24px auto;padding:0 16px}
+    h1{font-size:clamp(26px,2.8vw,36px);margin:0 0 6px}
+ h2{font-size:22px;margin:0 0 8px}
+    p.sub{color:var(--muted);margin:0 0 18px;line-height:1.35}
+    .grid{display:grid;grid-template-columns:repeat(12,1fr);gap:14px}
+    .card{background:var(--card);box-shadow:var(--shadow);border:1px solid var(--border);border-radius:12px;padding:16px}
+    .span-12{grid-column:span 12}.span-8{grid-column:span 12}.span-6{grid-column:span 12}.span-4{grid-column:span 12}
+    @media(min-width:980px){.span-8{grid-column:span 8}.span-6{grid-column:span 6}.span-4{grid-column:span 4}}
+    .row{display:flex;gap:12px;flex-wrap:wrap}
+    .field{flex:1 1 180px;min-width:220px}
+    label{display:block;font-size:15px;color:var(--muted);margin:4px 0}
+    input,select{width:100%;padding:10px 12px;border-radius:10px;background:var(--surface2);color:var(--text);border:1px solid var(--border2);outline:none;font-size:17px}
+    input:focus,select:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(0,88,154,.18)}
+    .actions{display:flex;gap:12px;flex-wrap:wrap;margin-top:12px}
+    button{background:var(--accent);color:#ffffff;border:none;border-radius:10px;padding:10px 14px;font-weight:800;cursor:pointer}
+    button.secondary{background:var(--surface);color:var(--text);border:1px solid var(--border2)}
+    .kpi{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:12px}
+    .kpi .item{background:var(--surface);border:1px solid var(--border2);border-radius:10px;padding:12px}
+    .kpi h3{margin:0 0 4px;font-size:12px;color:var(--muted);font-weight:650}
+    .kpi .val{font-size:24px;font-weight:850}
+    .small{font-size:15px;color:var(--muted);line-height:1.35}
+    .ok{color:var(--good)}.warn{color:var(--warn)}.bad{color:var(--bad)}
+    details{background:var(--surface);border:1px dashed var(--border2);padding:12px;border-radius:10px}
+    code{background:var(--surface);border:1px solid var(--border2);padding:2px 6px;border-radius:6px}
+    table{width:100%;border-collapse:collapse;border:1px solid var(--border2)}
+    th,td{padding:8px;border-bottom:1px solid var(--border2);text-align:left;vertical-align:top}
+    th{color:var(--text);font-weight:650}
+    td.r{text-align:right}
+    .pill{display:inline-block;padding:2px 8px;border:1px solid var(--border2);border-radius:999px;font-size:12px;color:var(--text);background:var(--surface)}
+    .note{border-left:3px solid var(--accent);padding-left:10px;margin:10px 0}
+    /* Segmented toggle for sizing method */
+    .seg{display:flex;gap:0;background:var(--surface);border:1px solid var(--border2);border-radius:12px;overflow:hidden}
+    .seg .seg-item{flex:1;cursor:pointer;user-select:none}
+    .seg .seg-item input{display:none}
+    .seg .seg-item span{display:block;padding:10px 10px;text-align:center;font-weight:750;color:var(--text);border-right:1px solid var(--border2)}
+    .seg .seg-item:last-child span{border-right:none}
+    .seg .seg-item input:checked + span{background:var(--accent);color:#ffffff}
+    .seg .seg-item span:hover{filter:brightness(1.05)}
+    .subnote{font-weight:650;font-size:0.85em;opacity:.85;margin-left:6px}
+
+    hr{border:none;border-top:1px solid var(--border);margin:14px 0}
+    @media print{
+      @page{size:Letter;margin:0.5in}
+      body{background:#fff;color:#000;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+      .wrap{max-width:none;margin:0;padding:0}
+      .actions{display:none!important}
+      .card{break-inside:avoid;page-break-inside:avoid;background:#fff;border-color:#d0d7e2;color:#000}
+      .kpi .item{background:#fff;border-color:#d0d7e2}
+      details{background:#fff;border-color:#d0d7e2}
+      input,select{border-color:#d0d7e2;color:#000;background:#fff}
+    }
+  
+.brand-logo{height:44px;width:auto;display:block;margin:0 0 8px}
+
+  /* --- Additions for v81 --- */
+  .help-btn{margin-left:6px;width:18px;height:18px;border-radius:999px;border:1px solid var(--border2);background:var(--surface2);color:var(--accent);font-weight:850;font-size:12px;line-height:1;display:inline-flex;align-items:center;justify-content:center;padding:0;cursor:pointer}
+  .help-btn:hover{filter:brightness(1.05)}
+  .help-btn:focus{outline:none;box-shadow:0 0 0 3px rgba(0,88,154,.18)}
+
+  #r_ventLen{font-size:32px;font-weight:900;background:rgba(0,88,154,.10);box-shadow:inset 0 0 0 2px rgba(0,88,154,.18);border-radius:10px;padding:4px 8px;display:inline-block;min-width:84px;text-align:right}
+
+  .toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);background:rgba(15,27,45,.92);color:#fff;padding:10px 14px;border-radius:12px;font-size:14px;font-weight:650;box-shadow:0 10px 28px rgba(15,27,45,.18);opacity:0;pointer-events:none;transition:opacity .18s ease, transform .18s ease;z-index:9999;max-width:min(92vw,520px);text-align:center}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(-6px)}
+
+  @keyframes btnPulse{0%{transform:translateY(0) scale(1)}50%{transform:translateY(-1px) scale(1.02);box-shadow:0 10px 22px rgba(0,88,154,.18)}100%{transform:translateY(0) scale(1)}}
+  #calc.btn-pulse{animation:btnPulse .22s ease-out}
+
+  #compareTable th.r, #compareTable td.r{text-align:right}
+  
+    /* Discrete unit toggle for louver size */
+    .unit-toggle{display:inline-flex;gap:0;margin-left:8px;vertical-align:middle}
+    .unit-toggle input{display:none}
+    .unit-toggle label{padding:4px 8px;font-size:12px;cursor:pointer;color:#ffffff;background:#0f1625;border:1px solid #223553;font-weight:700}
+    .unit-toggle label:first-of-type{border-radius:6px 0 0 6px;border-right:none}
+    .unit-toggle label:last-of-type{border-radius:0 6px 6px 0}
+    .unit-toggle input:checked+label{background:var(--accent);color:#ffffff;border-color:var(--accent)}
+    .unit-toggle label:hover{filter:brightness(1.05)}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <img class="brand-logo" src="data:image/png;base64,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" alt="Moffitt Ventilation Solutions"/>
+    <h1>Moffitt Natural Ventilator Selector</h1>
+    <p class="sub">Based on ASHRAE Fundamentals Chapter 16 Equation 38</p>
+
+    <div class="grid">
+      <div class="card span-6">
+        <h2>Inputs</h2>
+
+        <div class="row">
+          <div class="field">
+            <label>Method</label>
+            <div class="seg" role="tablist" aria-label="Method">
+              <label class="seg-item"><input type="radio" name="method" value="heat" checked><span>Heat Load Method</span></label>
+              <label class="seg-item"><input type="radio" name="method" value="cfm"><span>Airflow Method</span></label>
+            </div>
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="field" id="heatField">
+            <label>Heat Load (BTU/h)</label>
+            <input id="heat" type="text" inputmode="decimal" value="" placeholder=""/>
+          </div>
+          <div class="field" id="cfmField" style="display:none">
+            <label>Airflow (CFM)</label>
+            <input id="cfm" type="text" inputmode="decimal" value="" disabled placeholder="auto"/>
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="field">
+            <label>Temperature rise, T (°F)
+              <button type="button" class="help-btn" aria-label="Temperature rise help" onclick="showTempRiseHelp(event)">?</button>
+            </label>
+            <input id="dt" type="number" step="1" min="1" value="" placeholder=""/>
+          </div>
+        </div>
+
+        <input id="te" type="hidden" value="95"/>
+        <input id="ti" type="hidden" value=""/>
+
+        <hr/>
+
+        <div class="row">
+          <div class="field">
+            <label>Building height, H (ft)</label>
+            <input id="ht" type="number" step="0.1" value="30"/>
+          </div>
+          <div class="field" style="display:none">
+            <label>Gravity constant (ft/s²)</label>
+            <input id="g" type="number" step="0.1" value="32.2"/>
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="field">
+            <label>Vent Type</label>
+            <div class="seg" role="tablist" aria-label="Vent type">
+              <label class="seg-item"><input type="radio" name="ventType" value="MoffittVent" checked><span>MoffittVent</span></label>
+              <label class="seg-item"><input type="radio" name="ventType" value="MatrixVent"><span>MatrixVent</span></label>
+            </div>
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="field" id="moffittWidthBlock">
+            <label>MoffittVent Throat Size (ft)</label>
+            <div class="seg" role="tablist" aria-label="MoffittVent throat size">
+              <label class="seg-item"><input type="radio" name="moffittWPreset" value="2"><span>2</span></label>
+              <label class="seg-item"><input type="radio" name="moffittWPreset" value="4" checked><span>4</span></label>
+              <label class="seg-item"><input type="radio" name="moffittWPreset" value="6"><span>6</span></label>
+              <label class="seg-item"><input type="radio" name="moffittWPreset" value="8"><span>8</span></label>
+              <label class="seg-item"><input type="radio" name="moffittWPreset" value="10"><span>10</span></label>
+              <label class="seg-item"><input type="radio" name="moffittWPreset" value="12"><span>12</span></label>
+              <label class="seg-item"><input type="radio" name="moffittWPreset" value="15"><span>15</span></label>
+            </div>
+          </div>
+          <div class="field" id="matrixWidthBlock" style="display:none">
+            <label>MatrixVent Standard Width (ft)</label>
+            <input id="matrixW" type="number" disabled value="10"/>
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="field">
+            <label>Vent Quantity</label>
+            <div class="seg" role="tablist" aria-label="Vent quantity">
+              <label class="seg-item"><input type="radio" name="nexhPreset" value="1" checked><span>1</span></label>
+              <label class="seg-item"><input type="radio" name="nexhPreset" value="2"><span>2</span></label>
+              <label class="seg-item"><input type="radio" name="nexhPreset" value="3"><span>3</span></label>
+              <label class="seg-item"><input type="radio" name="nexhPreset" value="4"><span>4</span></label>
+              <label class="seg-item"><input type="radio" name="nexhPreset" value="5"><span>5</span></label>
+              <label class="seg-item"><input type="radio" name="nexhPreset" value="custom"><span>Custom</span></label>
+            </div>
+          </div>
+          <div class="field" id="nexhCustomBlock" style="display:none">
+            <label>Custom exhaust vents</label>
+            <input id="nexhCustom" type="number" step="1" min="1" value="1"/>
+          </div>
+        </div>
+
+        <hr/>
+
+        <div class="row">
+          <div class="field">
+            <label>Wall Louver Type</label>
+            <div class="seg" role="tablist" aria-label="Wall louver type">
+              <label class="seg-item"><input type="radio" name="inletTypeToggle" value="louver" checked><span>90° Wall Louvers</span></label>
+              <label class="seg-item"><input type="radio" name="inletTypeToggle" value="louver45"><span>45° Wall Louvers</span></label>
+            </div>
+          </div>
+          <div class="field">
+            <label id="louverSizeLabel">Wall Louver Size (ft)</label>
+            <input id="louverSize" type="text" value="5 x 8"/>
+            <span class="unit-toggle">
+              <input type="radio" name="louverUnit" id="luFt" value="ft" checked><label for="luFt">ft</label>
+              <input type="radio" name="louverUnit" id="luIn" value="in"><label for="luIn">in</label>
+            </span>
+          </div>
+        </div>
+
+        <div class="actions">
+          <button id="calc" type="button">Calculate</button>
+          <button id="reset" type="button" class="secondary">Reset</button>
+          <button id="exportPdf" type="button" class="secondary" onclick="compute();window.print();">Export PDF</button>
+        </div>
+
+        <div class="small" id="msg" style="margin-top:10px"></div>
+      </div>
+
+      <div class="card span-6">
+        <h2 style="margin:0 0 8px">Results</h2>
+
+        <div class="row" style="margin-top:8px">
+          <div class="field" style="flex:1 1 360px;min-width:320px">
+            <table>
+              <tbody>
+                <tr><th>Vent Length (per vent)</th><td class="r" id="r_ventLen"></td></tr>
+                <tr><th>Vent Velocity</th><td class="r" id="r_vout"></td></tr>
+                <tr><th>Wall Louver Quantity</th><td class="r" id="r_louversNeed"></td></tr>
+              <tr><th>Wall Louver Velocity</th><td class="r" id="r_louverVel"></td></tr>
+</tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="actions" style="margin-top:8px">
+          <button type="button" class="secondary" id="saveA" onclick="saveDesign('A')">Save as Design A</button>
+          <button type="button" class="secondary" id="saveB" onclick="saveDesign('B')">Save as Design B</button>
+        </div>
+
+        <div id="compareSection" style="display:none">
+          <hr/>
+          <h2 style="margin:0 0 8px">Compare 2 designs</h2>
+          <div class="actions" style="margin-top:8px">
+            <button type="button" class="secondary" id="swapAB" onclick="swapCompare()">Swap A  B</button>
+            <button type="button" class="secondary" id="clearCompare" onclick="clearCompare()">Clear</button>
+          </div>
+          <div class="small" id="compareNote" style="margin-top:8px"></div>
+          <div class="row" style="margin-top:10px">
+            <div class="field" style="flex:1 1 360px;min-width:320px">
+              <table id="compareTable">
+                <thead>
+                  <tr><th>Item</th><th class="r">Design A</th><th class="r">Design B</th></tr>
+                </thead>
+                <tbody></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <div id="toast" class="toast" role="status" aria-live="polite" aria-atomic="true"></div>
+
+<script>
+  const PRESET = { MoffittVent: { cd: 0.38, w: 4 }, MatrixVent: { cd: 0.22, w: 10 } };
+  const fmt0 = x => (isFinite(x)? x.toLocaleString(undefined,{maximumFractionDigits:0}):'');
+
+  function showTempRiseHelp(e){ if(e){e.preventDefault(); e.stopPropagation();} alert('Temperature rise is calculated by indoor peak temperature minus outdoor temperature'); }
+  function showToast(message, durationMs=2000){
+    const el = document.getElementById('toast');
+    if(!el) return;
+    el.textContent = message;
+    el.classList.add('show');
+    clearTimeout(window.__toastTimer);
+    window.__toastTimer = setTimeout(()=>{ el.classList.remove('show'); }, durationMs);
+  }
+  function pulseCalcBtn(){
+    const b = document.getElementById('calc');
+    if(!b) return;
+    b.classList.remove('btn-pulse');
+    void b.offsetWidth;
+    b.classList.add('btn-pulse');
+    setTimeout(()=>b.classList.remove('btn-pulse'), 260);
+  }
+
+  function parseNum(v){
+    if(v===null || v===undefined) return NaN;
+    const s = String(v).replace(/,/g,'').trim();
+    if(s==='') return NaN;
+    const n = parseFloat(s);
+    return isFinite(n) ? n : NaN;
+  }
+
+  function getMethod(){
+    const el = document.querySelector('input[name="method"]:checked');
+    return el ? el.value : 'heat';
+  }
+
+  function syncMethod(){
+    const method = getMethod();
+    const heatField = document.getElementById('heatField');
+    const cfmField = document.getElementById('cfmField');
+    const heat = document.getElementById('heat');
+    const cfm = document.getElementById('cfm');
+
+    if(method === 'heat'){
+      heatField.style.display = 'block';
+      cfmField.style.display = 'none';
+      heat.disabled = false;
+      cfm.disabled = true;
+      cfm.value = '';
+    }else{
+      heatField.style.display = 'none';
+      cfmField.style.display = 'block';
+      heat.disabled = true;
+      cfm.disabled = false;
+      heat.value = '';
+    }
+  }
+
+  function getVentType(){
+    const el = document.querySelector('input[name="ventType"]:checked');
+    return el ? el.value : 'MoffittVent';
+  }
+  function getVentWidth(){
+    const vt = getVentType();
+    if(vt === 'MatrixVent') return PRESET.MatrixVent.w;
+    const el = document.querySelector('input[name="moffittWPreset"]:checked');
+    return el ? parseFloat(el.value) : PRESET.MoffittVent.w;
+  }
+  function syncVentBlocks(){
+    const vt = getVentType();
+    document.getElementById('moffittWidthBlock').style.display = vt === 'MoffittVent' ? 'block' : 'none';
+    document.getElementById('matrixWidthBlock').style.display = vt === 'MatrixVent' ? 'block' : 'none';
+  }
+
+  function getNexh(){
+    const preset = document.querySelector('input[name="nexhPreset"]:checked');
+    if(preset && preset.value === 'custom'){
+      return Math.max(1, parseInt(document.getElementById('nexhCustom').value || '1', 10));
+    }
+    return preset ? Math.max(1, parseInt(preset.value, 10)) : 1;
+  }
+  function syncNexh(){
+    const preset = document.querySelector('input[name="nexhPreset"]:checked');
+    document.getElementById('nexhCustomBlock').style.display = (preset && preset.value==='custom') ? 'block' : 'none';
+  }
+
+  function getInletType(){
+    const el = document.querySelector('input[name="inletTypeToggle"]:checked');
+    return el ? el.value : 'louver';
+  }
+
+  
+  function syncLouverLabel(){
+    const u = document.querySelector('input[name="louverUnit"]:checked');
+    const lbl = document.getElementById('louverSizeLabel');
+    if(lbl) lbl.textContent = 'Wall Louver Size (' + (u && u.value === 'in' ? 'in' : 'ft') + ')';
+  }
+
+  function compute(){
+    const msg = document.getElementById('msg');
+    msg.textContent = '';
+
+    const method = getMethod();
+    let Heat = parseNum(document.getElementById('heat').value);
+    let CFM = parseNum(document.getElementById('cfm').value);
+
+    const dT = parseFloat(document.getElementById('dt').value);
+    if(!isFinite(dT) || !(dT > 0)){
+      msg.innerHTML = '<span class="bad">Enter a positive temperature rise (T).</span>';
+      return;
+    }
+
+    const Te = parseFloat(document.getElementById('te').value) || 95;
+    const Ti = Te + dT;
+    document.getElementById('ti').value = String(Ti);
+
+    if(method === 'heat'){
+      if(!isFinite(Heat) || !(Heat > 0)){
+        msg.innerHTML = '<span class="bad">Enter a positive Heat Load (BTU/h).</span>';
+        return;
+      }
+      CFM = Heat / (1.08 * dT);
+      if(!isFinite(CFM) || !(CFM > 0)){
+        msg.innerHTML = '<span class="bad">Calculated Airflow is invalid. Check Heat Load and T.</span>';
+        return;
+      }
+      document.getElementById('cfm').value = fmt0(Math.round(CFM));
+    }else{
+      if(!isFinite(CFM) || !(CFM > 0)){
+        msg.innerHTML = '<span class="bad">Enter a positive Airflow (CFM).</span>';
+        return;
+      }
+      Heat = 1.08 * CFM * dT;
+      document.getElementById('heat').value = fmt0(Math.round(Heat));
+    }
+
+    const g = parseFloat(document.getElementById('g').value) || 32.2;
+    const H = parseFloat(document.getElementById('ht').value) || 0;
+    const h = 0.53 * H;
+    if(!(h > 0)){
+      msg.innerHTML = '<span class="bad">Building height must be greater than 0.</span>';
+      return;
+    }
+
+    const TiR = Ti + 459.67;
+    const TeR = Te + 459.67;
+    const ratio = (TiR - TeR) / TiR;
+    if(!(ratio > 0)){
+      msg.innerHTML = '<span class="bad">Temperature ratio is invalid (check T).</span>';
+      return;
+    }
+
+    const vt = getVentType();
+    const Cd = (vt === 'MatrixVent') ? PRESET.MatrixVent.cd : PRESET.MoffittVent.cd;
+
+    const sqrtTerm = Math.sqrt(Math.max(0, 2 * g * h * ratio));
+    if(!(sqrtTerm > 0)){
+      msg.innerHTML = '<span class="bad">Stack term is zero; check inputs.</span>';
+      return;
+    }
+
+    const Qcfs = CFM / 60.0;
+    const S_total = Qcfs / (Cd * sqrtTerm);
+    const vOut = CFM / S_total;
+
+    syncVentBlocks();
+    const W = getVentWidth();
+    syncNexh();
+    const N = getNexh();
+    const L = (S_total / N) / W;
+
+    const inletType = getInletType();
+    // Parse louver size from user input (format: "W x H")
+    const louverParts = (document.getElementById('louverSize').value || '5 x 8').split(/[xX]/);
+    const louverW = parseFloat(louverParts[0]) || 5;
+    const louverH = parseFloat(louverParts[1]) || 8;
+    // Check unit toggle: convert inches to feet if needed
+    const louverUnit = document.querySelector('input[name="louverUnit"]:checked');
+    const louverScale = (louverUnit && louverUnit.value === 'in') ? (1/12) : 1;
+    const louverLength = louverW * louverScale;
+    const louverWidth = louverH * louverScale;
+    const louverCd = (inletType === 'louver45') ? 0.35 : 0.82;
+    const effAreaPerLouver = louverLength * louverWidth * louverCd;
+    const louvers = Math.ceil((CFM / 500.0) / effAreaPerLouver);
+    // Effective Area = Quantity × Length × Width × Coefficient of Discharge
+    const totalEffArea = louvers * louverLength * louverWidth * louverCd;
+    const vLouver = totalEffArea > 0 ? (CFM / totalEffArea) : NaN;
+
+    document.getElementById('r_ventLen').textContent = `${fmt0(Math.round(L))} ft`;
+    document.getElementById('r_vout').textContent = `${fmt0(Math.round(vOut))} fpm`;
+    document.getElementById('r_louversNeed').textContent = `${fmt0(louvers)} ea`;
+    const __lvEl = document.getElementById('r_louverVel');
+    if(__lvEl) __lvEl.textContent = `${fmt0(Math.round(vLouver))} fpm`;
+  }
+
+  function resetForm(){
+    document.getElementById('heat').value='';
+    document.getElementById('cfm').value='';
+    document.getElementById('dt').value='';
+
+    document.getElementById('ht').value=30;
+    document.getElementById('g').value=32.2;
+
+    document.querySelectorAll('input[name="ventType"]').forEach(el=>{ el.checked = (el.value==='MoffittVent'); });
+    document.querySelectorAll('input[name="moffittWPreset"]').forEach(el=>{ el.checked = (el.value==='4'); });
+
+    document.querySelectorAll('input[name="nexhPreset"]').forEach(el=>{ el.checked = (el.value==='1'); });
+    document.getElementById('nexhCustom').value=1;
+
+    document.querySelectorAll('input[name="inletTypeToggle"]').forEach(el=>{ el.checked = (el.value==='louver'); });
+
+    document.getElementById('r_ventLen').textContent='';
+    document.getElementById('r_vout').textContent='';
+    document.getElementById('r_louversNeed').textContent='';
+    const __lvEl2 = document.getElementById('r_louverVel');
+    if(__lvEl2) __lvEl2.textContent='';
+    document.getElementById('msg').textContent='';
+
+    syncVentBlocks();
+    syncNexh();
+    renderCompare();
+    syncMethod();
+  }
+
+  function setCompareVisible(show){
+    const sec = document.getElementById('compareSection');
+    if(sec) sec.style.display = show ? 'block' : 'none';
+  }
+  function snapshot(){
+    const getText = (id)=>{ const el=document.getElementById(id); return el ? el.textContent.trim() : ''; };
+    const getVal  = (id)=>{ const el=document.getElementById(id); return el ? el.value : ''; };
+    return {
+      savedAt: new Date().toLocaleString(),
+      method: getMethod(),
+      heat: getVal('heat'),
+      airflow: getVal('cfm'),
+      dt: getVal('dt'),
+      ventType: getVentType(),
+      ventQty: getNexh(),
+      ventWidth: getVentWidth(),
+      ventLen: getText('r_ventLen'),
+      ventVel: getText('r_vout'),
+      inletType: getInletType(),
+      louverQty: getText('r_louversNeed'),
+      louverVel: getText('r_louverVel'),
+      louverSize: getVal('louverSize'),
+      louverUnit: (document.querySelector('input[name="louverUnit"]:checked')||{}).value || 'ft',
+    };
+  }
+
+function saveDesign(slot){
+    try{ compute(); }catch(e){}
+    localStorage.setItem('moffittDesign'+slot, JSON.stringify(snapshot()));
+    renderCompare();
+    showToast(`Saved Design ${slot}`);
+  }
+  function loadDesign(slot){
+    const raw = localStorage.getItem('moffittDesign'+slot);
+    if(!raw) return null;
+    try{ return JSON.parse(raw); }catch(e){ return null; }
+  }
+  function swapCompare(){
+    const a = localStorage.getItem('moffittDesignA');
+    const b = localStorage.getItem('moffittDesignB');
+    if(a!==null) localStorage.setItem('moffittDesignB', a); else localStorage.removeItem('moffittDesignB');
+    if(b!==null) localStorage.setItem('moffittDesignA', b); else localStorage.removeItem('moffittDesignA');
+    renderCompare();
+  }
+  function clearCompare(){
+    ['A','B'].forEach(k=>localStorage.removeItem('moffittDesign'+k));
+    renderCompare();
+    setCompareVisible(false);
+  }
+  function addRow(tbody, label, a, b){
+    const tr=document.createElement('tr');
+    const td0=document.createElement('td'); td0.textContent=label;
+    const td1=document.createElement('td'); td1.className='r'; td1.textContent=a||'';
+    const td2=document.createElement('td'); td2.className='r'; td2.textContent=b||'';
+    tr.appendChild(td0); tr.appendChild(td1); tr.appendChild(td2);
+    tbody.appendChild(tr);
+  }
+  function renderCompare(){
+    const table = document.getElementById('compareTable');
+    const note = document.getElementById('compareNote');
+    if(!table) return;
+    const tbody = table.querySelector('tbody');
+    tbody.innerHTML='';
+    const A = loadDesign('A');
+    const B = loadDesign('B');
+    const haveA = !!A, haveB = !!B;
+    if(!haveA && !haveB){ setCompareVisible(false); if(note) note.textContent=''; return; }
+    setCompareVisible(true);
+    if(note) note.textContent = `A saved: ${haveA?A.savedAt:''}  |  B saved: ${haveB?B.savedAt:''}`;
+
+    addRow(tbody, 'Method', haveA?(A.method==='heat'?'Heat Load Method':'Airflow Method'):'', haveB?(B.method==='heat'?'Heat Load Method':'Airflow Method'):'');
+    addRow(tbody, 'T (°F)', haveA?A.dt:'', haveB?B.dt:'');
+    addRow(tbody, 'Heat Load (BTU/h)', haveA?A.heat:'', haveB?B.heat:'');
+    addRow(tbody, 'Airflow (CFM)', haveA?A.airflow:'', haveB?B.airflow:'');
+    addRow(tbody, 'Vent Type', haveA?A.ventType:'', haveB?B.ventType:'');
+    addRow(tbody, 'Vent Quantity', haveA?String(A.ventQty):'', haveB?String(B.ventQty):'');
+    addRow(tbody, 'Vent Width', haveA?`${fmt0(Math.round(A.ventWidth))} ft`:'', haveB?`${fmt0(Math.round(B.ventWidth))} ft`:'');
+    addRow(tbody, 'Vent Length (per vent)', haveA?A.ventLen:'', haveB?B.ventLen:'');
+    addRow(tbody, 'Vent Velocity', haveA?A.ventVel:'', haveB?B.ventVel:'');
+    const fmtInlet = (v)=> v==='louver45'?'45° Wall Louvers': v==='louver'?'90° Wall Louvers': v||'';
+    addRow(tbody, 'Wall Louver Type', haveA?fmtInlet(A.inletType):'', haveB?fmtInlet(B.inletType):'');
+    addRow(tbody, 'Wall Louver Quantity', haveA?String(A.louverQty).replace(/\s*ea\s*$/i,'').trim():'' , haveB?String(B.louverQty).replace(/\s*ea\s*$/i,'').trim():'');
+    const fmtSize = (s, unit)=>{ unit = unit || 'ft'; if(!s) return ''; const cleaned=String(s).trim().replace(//g,'x'); const parts=cleaned.split(/x/i).map(p=>p.trim()).filter(Boolean); if(parts.length>=2) return `${parts[0]}${unit} x ${parts[1]}${unit}`; return cleaned; };
+    addRow(tbody, 'Wall Louver Size', haveA?fmtSize(A.louverSize, A.louverUnit):'', haveB?fmtSize(B.louverSize, B.louverUnit):'');
+    addRow(tbody, 'Wall Louver Velocity', haveA?A.louverVel:'', haveB?B.louverVel:'');
+  }
+
+  document.addEventListener('DOMContentLoaded', ()=>{
+    const heatEl = document.getElementById('heat');
+    const cfmEl = document.getElementById('cfm');
+    heatEl.addEventListener('blur', ()=>{ const n=parseNum(heatEl.value); heatEl.value = isFinite(n)?fmt0(Math.round(n)):''; });
+    cfmEl.addEventListener('blur', ()=>{ const n=parseNum(cfmEl.value); cfmEl.value = isFinite(n)?fmt0(Math.round(n)):''; });
+
+    document.querySelectorAll('input[name="method"]').forEach(el=>el.addEventListener('change', syncMethod));
+    document.querySelectorAll('input[name="ventType"]').forEach(el=>el.addEventListener('change', syncVentBlocks));
+    document.querySelectorAll('input[name="nexhPreset"]').forEach(el=>el.addEventListener('change', syncNexh));
+    document.getElementById('nexhCustom').addEventListener('input', syncNexh);
+    document.querySelectorAll('input[name="louverUnit"]').forEach(el=>el.addEventListener('change', syncLouverLabel));
+    syncLouverLabel();
+
+    document.getElementById('calc').addEventListener('click', ()=>{ pulseCalcBtn(); compute(); });
+    document.getElementById('reset').addEventListener('click', resetForm);
+
+    document.querySelectorAll('input').forEach(el=>{
+      el.addEventListener('keydown', (e)=>{ if(e.key==='Enter'){ pulseCalcBtn(); compute(); } });
+    });
+
+    syncVentBlocks();
+    syncNexh();
+    syncMethod();
+    renderCompare();
+  });
+</script>
+
+</body>
+</html>
