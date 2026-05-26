@@ -1,0 +1,154 @@
+import { Router } from 'express';
+import { execFile } from 'child_process';
+import { promisify } from 'util';
+import { readFile, writeFile, copyFile, mkdir } from 'fs/promises';
+import { join, dirname } from 'path';
+import { fileURLToPath } from 'url';
+import { requireAuth, requireVentilatorBeta, requireCanDeploy } from '../auth/middleware.js';
+import {
+  getTestCases, getTestRuns, upsertTestRun, getUserFeedback,
+  insertDeploy, getRecentDeploys,
+} from '../db.js';
+
+const execFileP = promisify(execFile);
+const router = Router();
+
+const __dir   = dirname(fileURLToPath(import.meta.url));
+const ROOT    = join(__dir, '../..');
+const PUBLIC  = join(ROOT, 'public');
+const LIVE    = join(PUBLIC, 'v213.html');
+const BACKUPS = join(PUBLIC, 'backups');
+const REPO    = join(ROOT, 'repo');
+const REPO_CALC = join(REPO, 'public', 'index.html');
+
+const SEP = '|@@|';  // field separator for git log parsing (never appears in commit data)
+
+// ── Panel data — one call populates the whole Beta panel ────────────────────
+router.get('/ventilator/beta/data', requireAuth, requireVentilatorBeta, async (req, res) => {
+  try {
+    const [cases, runs, feedback, changelog, deploys] = await Promise.all([
+      getTestCases(),
+      getTestRuns(req.user.email),
+      getUserFeedback(req.user.email),
+      gitChangelog(),
+      getRecentDeploys(10),
+    ]);
+    res.json({
+      ok: true,
+      user: { email: req.user.email, can_deploy: !!req.user.can_deploy },
+      cases, runs, feedback, changelog, deploys,
+    });
+  } catch (err) {
+    console.error('[beta] data error:', err.message);
+    res.status(500).json({ ok: false, error: 'Could not load beta data' });
+  }
+});
+
+// ── Save a test result (upsert per user+test) ──────────────────────────────
+router.post('/ventilator/beta/test-run', requireAuth, requireVentilatorBeta, async (req, res) => {
+  const { test_key, status, notes } = req.body || {};
+  if (!test_key || typeof test_key !== 'string') {
+    return res.status(400).json({ ok: false, error: 'test_key required' });
+  }
+  if (!['pass', 'fail', 'skip'].includes(status)) {
+    return res.status(400).json({ ok: false, error: 'invalid status' });
+  }
+  const cleanNotes = (notes == null ? '' : String(notes)).slice(0, 2000);
+  try {
+    await upsertTestRun(req.user.email, test_key, status, cleanNotes);
+    res.json({ ok: true });
+  } catch (err) {
+    console.error('[beta] test-run error:', err.message);
+    res.status(500).json({ ok: false, error: 'Could not save result' });
+  }
+});
+
+// ── Deploy: upload a new calculator HTML (can_deploy only) ──────────────────
+router.post('/ventilator/beta/deploy/upload', requireAuth, requireVentilatorBeta, requireCanDeploy, async (req, res) => {
+  const { content_b64 } = req.body || {};
+  if (!content_b64 || typeof content_b64 !== 'string') {
+    return res.status(400).json({ ok: false, error: 'content_b64 required' });
+  }
+  let html;
+  try {
+    html = Buffer.from(content_b64, 'base64').toString('utf8');
+  } catch {
+    return res.status(400).json({ ok: false, error: 'invalid base64' });
+  }
+  if (!/id\s*=\s*["']calc["']/.test(html)) {
+    return res.status(400).json({ ok: false, error: 'File does not look like the calculator (missing #calc element). Upload rejected.' });
+  }
+  if (html.length > 2 * 1024 * 1024) {
+    return res.status(400).json({ ok: false, error: 'File too large' });
+  }
+  let backupName = null;
+  try {
+    backupName = await backupLive();
+    await writeFile(LIVE, html, 'utf8');
+  } catch (err) {
+    console.error('[beta] upload error:', err.message);
+    await insertDeploy({ user_email: req.user.email, method: 'upload', detail: err.message, backup_file: backupName, ok: false }).catch(() => {});
+    return res.status(500).json({ ok: false, error: 'Could not write file' });
+  }
+  await insertDeploy({ user_email: req.user.email, method: 'upload', detail: `uploaded ${html.length} bytes`, backup_file: backupName, ok: true }).catch(() => {});
+  res.json({ ok: true, backup: backupName, bytes: html.length });
+});
+
+// ── Deploy: git pull the repo and publish its calculator (can_deploy only) ──
+router.post('/ventilator/beta/deploy/git-pull', requireAuth, requireVentilatorBeta, requireCanDeploy, async (req, res) => {
+  let pullOut = '';
+  try {
+    const { stdout } = await execFileP('git', ['-C', REPO, 'pull', '--ff-only'], { timeout: 30000 });
+    pullOut = stdout.trim();
+  } catch (err) {
+    const msg = (err.stderr || err.message || '').toString().slice(0, 500);
+    console.error('[beta] git-pull error:', msg);
+    await insertDeploy({ user_email: req.user.email, method: 'git-pull', detail: `pull failed: ${msg}`, ok: false }).catch(() => {});
+    return res.status(500).json({ ok: false, error: `git pull failed: ${msg}` });
+  }
+  let backupName = null;
+  try {
+    backupName = await backupLive();
+    await copyFile(REPO_CALC, LIVE);
+  } catch (err) {
+    console.error('[beta] git-pull publish error:', err.message);
+    await insertDeploy({ user_email: req.user.email, method: 'git-pull', detail: `publish failed: ${err.message}`, backup_file: backupName, ok: false }).catch(() => {});
+    return res.status(500).json({ ok: false, error: 'Pulled, but could not publish calculator file' });
+  }
+  const head = await gitHead().catch(() => '');
+  await insertDeploy({ user_email: req.user.email, method: 'git-pull', detail: `pulled @ ${head}: ${pullOut}`.slice(0, 500), backup_file: backupName, ok: true }).catch(() => {});
+  res.json({ ok: true, backup: backupName, pull: pullOut, head });
+});
+
+// ── helpers ─────────────────────────────────────────────────────────────────
+async function backupLive() {
+  await mkdir(BACKUPS, { recursive: true });
+  let current;
+  try { current = await readFile(LIVE); } catch { return null; }
+  const ts = new Date().toISOString().replace(/[:.]/g, '-');
+  const name = `v213-${ts}.html`;
+  await writeFile(join(BACKUPS, name), current);
+  return name;
+}
+
+async function gitChangelog() {
+  try {
+    const { stdout } = await execFileP(
+      'git', ['-C', REPO, 'log', `--pretty=%h${SEP}%an${SEP}%ad${SEP}%s`, '--date=short', '-15'],
+      { timeout: 10000 }
+    );
+    return stdout.trim().split('\n').filter(Boolean).map(line => {
+      const parts = line.split(SEP);
+      return { hash: parts[0], author: parts[1], date: parts[2], subject: parts[3] };
+    });
+  } catch {
+    return [];
+  }
+}
+
+async function gitHead() {
+  const { stdout } = await execFileP('git', ['-C', REPO, 'rev-parse', '--short', 'HEAD'], { timeout: 10000 });
+  return stdout.trim();
+}
+
+export default router;
