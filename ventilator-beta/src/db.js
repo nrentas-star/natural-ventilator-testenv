@@ -168,9 +168,10 @@ export function verifyOtp(email, code) {
 
 
 
-/** Recent USER activity + reported bugs/feedback for the ticker (excludes system notices). */
-export async function recentBetaActivity(limit = 5) {
-  const n = Math.min(Math.max(parseInt(limit, 10) || 5, 1), 20);
+
+/** Recent activity for the ticker: user test activity + bugs/feedback + deploys + updates. */
+export async function recentBetaActivity(limit = 6) {
+  const n = Math.min(Math.max(parseInt(limit, 10) || 6, 1), 20);
   const [rows] = await getPool().query(
     `SELECT actor, ts, label FROM (
        SELECT (SUBSTRING_INDEX(r.user_email,'@',1) COLLATE utf8mb4_general_ci) AS actor, r.updated_at AS ts,
@@ -185,6 +186,10 @@ export async function recentBetaActivity(limit = 5) {
        SELECT (SUBSTRING_INDEX(d.user_email,'@',1) COLLATE utf8mb4_general_ci), d.created_at,
               (CONCAT('deployed the calculator (', d.method, ')') COLLATE utf8mb4_general_ci)
          FROM ventilator_deploys d
+       UNION ALL
+       SELECT (SUBSTRING_INDEX(n.created_by,'@',1) COLLATE utf8mb4_general_ci), n.created_at,
+              (CONCAT(IF(n.kind='update','posted an update: ','posted a notice: '), n.title) COLLATE utf8mb4_general_ci)
+         FROM ventilator_notices n WHERE n.active = 1
      ) x
      WHERE ts IS NOT NULL
      ORDER BY ts DESC

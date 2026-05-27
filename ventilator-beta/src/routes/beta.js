@@ -54,7 +54,7 @@ router.get('/ventilator/beta/data', requireAuth, requireVentilatorBeta, async (r
 
 // ── Recent activity ticker feed (last 3 beta actions across all users) ──────
 router.get('/ventilator/beta/activity', requireAuth, requireVentilatorBeta, async (req, res) => {
-  try { res.json({ ok: true, activity: await recentBetaActivity(3) }); }
+  try { res.json({ ok: true, activity: await recentBetaActivity(6) }); }
   catch (err) { console.error('[beta] activity error:', err.message); res.json({ ok: false, activity: [] }); }
 });
 
