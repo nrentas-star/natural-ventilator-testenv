@@ -62,6 +62,9 @@ body{font-family:'Inter',system-ui,sans-serif;background:#f0f4f8;color:#0d1f3c;h
 /* Beta edge tab */
 .beta-tab{position:fixed;top:50%;right:0;transform:translateY(-50%);background:#e07c24;color:#fff;border:none;cursor:pointer;font-family:inherit;font-weight:700;font-size:12px;letter-spacing:2px;text-transform:uppercase;padding:16px 8px;writing-mode:vertical-rl;border-radius:8px 0 0 8px;box-shadow:-2px 0 10px rgba(0,0,0,.18);z-index:300}
 .beta-tab:hover{background:#c9691b}
+.fb-fab{position:fixed;bottom:20px;right:20px;z-index:300;background:#e07c24;color:#fff;border:none;cursor:pointer;font-family:inherit;font-weight:600;font-size:13px;border-radius:24px;padding:11px 16px;box-shadow:0 4px 14px rgba(0,0,0,.22);display:flex;align-items:center;gap:7px}
+.fb-fab:hover{background:#c9691b}
+.fb-fab svg{width:16px;height:16px}
 
 /* Beta panel */
 .beta-panel{position:fixed;top:0;right:-460px;width:460px;max-width:92vw;height:100vh;background:#fff;box-shadow:-8px 0 32px rgba(0,0,0,.22);z-index:400;display:flex;flex-direction:column;transition:right .25s ease}
@@ -174,6 +177,7 @@ body{font-family:'Inter',system-ui,sans-serif;background:#f0f4f8;color:#0d1f3c;h
 </footer>
 
 <button class="beta-tab" id="betaTab">Beta &nbsp;Testing</button>
+<button class="fb-fab" id="fbFab" title="Report a bug or suggestion — opens the feedback form"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>Feedback</button>
 
 <aside class="beta-panel" id="betaPanel">
   <div class="beta-head">
@@ -245,6 +249,13 @@ function renderBanner(){
 }
 
 $('#betaTab').addEventListener('click', () => { $('#betaPanel').classList.add('open'); if(!DATA) loadData(); });
+$('#fbFab').addEventListener('click', () => {
+  $('#betaPanel').classList.add('open');
+  if(!DATA) loadData();
+  const bugsBtn = document.querySelector('.beta-tabbtn[data-view="bugs"]');
+  if (bugsBtn) bugsBtn.click();
+  setTimeout(() => { const d = $('#fbDesc'); if (d) d.focus(); }, 300);
+});
 $('#betaClose').addEventListener('click', () => $('#betaPanel').classList.remove('open'));
 document.querySelectorAll('.beta-tabbtn').forEach(b => b.addEventListener('click', () => {
   document.querySelectorAll('.beta-tabbtn').forEach(x => x.classList.remove('active'));
