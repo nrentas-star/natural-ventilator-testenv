@@ -88,6 +88,8 @@ body{font-family:'Inter',system-ui,sans-serif;background:#f0f4f8;color:#0d1f3c;h
 .area-grp h3{font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#0d1f3c;margin-bottom:8px;padding-bottom:4px;border-bottom:1px solid #eef2f7}
 .tc{border:1px solid #e5e9f0;border-radius:8px;padding:12px;margin-bottom:10px}
 .tc__title{font-size:13px;font-weight:600;color:#0d1f3c;margin-bottom:4px}
+.tc__retire{float:right;background:none;border:1px solid #e5e9f0;border-radius:4px;font-size:10px;font-weight:600;color:#b91c1c;cursor:pointer;padding:1px 6px;font-family:inherit}
+.tc__retire:hover{background:#fef2f2}
 .tc__steps{font-size:12px;color:#475467;line-height:1.5;margin-bottom:4px}
 .tc__exp{font-size:12px;color:#16794a;line-height:1.45;margin-bottom:8px}
 .tc__exp b{color:#0d1f3c}
@@ -185,6 +187,7 @@ body{font-family:'Inter',system-ui,sans-serif;background:#f0f4f8;color:#0d1f3c;h
   </div>
   <div class="beta-body">
     <div class="beta-view active" id="view-tests">
+      <div id="tcCompose"></div>
       <div class="progress"><span id="progTxt">0 / 0 passed</span><div class="bar"><span id="progBar"></span></div></div>
       <div id="testList"><div class="muted">Loading test scripts…</div></div>
     </div>
@@ -275,7 +278,7 @@ function renderTests() {
       const run = runs[c.test_key] || {};
       const on = s => run.status===s ? ' on' : '';
       html += '<div class="tc" data-key="'+esc(c.test_key)+'">'
-        + '<div class="tc__title">'+esc(c.title)+'</div>'
+        + '<div class="tc__title">'+esc(c.title)+(CAN_DEPLOY?' <button class="tc__retire" data-key="'+esc(c.test_key)+'">retire</button>':'')+'</div>'
         + '<div class="tc__steps">'+esc(c.steps)+'</div>'
         + '<div class="tc__exp"><b>Expect:</b> '+esc(c.expected)+'</div>'
         + '<div class="tc__actions">'
@@ -302,6 +305,45 @@ function renderTests() {
       clearTimeout(t); t = setTimeout(() => saveRun(key, cur.dataset.s, ta.value), 700);
     });
   });
+  if (CAN_DEPLOY) {
+    document.querySelectorAll('#testList .tc__retire').forEach(b => b.addEventListener('click', e => {
+      e.stopPropagation();
+      if (confirm('Retire this test? It will be removed from all testers (history is kept).')) retireTest(b.dataset.key);
+    }));
+    if (!$('#tcArea')) {
+      const opts = ['Heat Load','Airflow','Validation','Vent Type','Louver','Reset','Design Comparison','PDF Export','Feedback Widget']
+        .map(a => '<option>'+a+'</option>').join('');
+      $('#tcCompose').innerHTML =
+        '<div class="compose"><h4>Add a test script</h4>'
+        + '<select id="tcArea">'+opts+'</select>'
+        + '<input id="tcTitle" placeholder="Title (e.g. Vent length for 750k BTU)" maxlength="255">'
+        + '<textarea id="tcSteps" placeholder="Steps the tester follows"></textarea>'
+        + '<textarea id="tcExp" placeholder="Expected result"></textarea>'
+        + '<button class="btn" id="tcAdd">Add test</button> <span class="note" id="tcMsg"></span></div>';
+      $('#tcAdd').addEventListener('click', addTest);
+    }
+  }
+}
+
+async function addTest() {
+  const title = $('#tcTitle').value.trim(); const msg = $('#tcMsg');
+  if (title.length < 3) { $('#tcTitle').focus(); return; }
+  $('#tcAdd').disabled = true; msg.textContent = 'Adding…'; msg.className='note';
+  try {
+    const r = await fetch('/ventilator/beta/test-cases', { method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ area:$('#tcArea').value, title, steps:$('#tcSteps').value.trim(), expected:$('#tcExp').value.trim() }) });
+    const j = await r.json(); if (!j.ok) throw new Error(j.error||'failed');
+    $('#tcTitle').value=''; $('#tcSteps').value=''; $('#tcExp').value=''; msg.textContent='✓ Added';
+    await loadData();
+  } catch (e) { msg.textContent='Error: '+e.message; msg.className='note err'; }
+  finally { $('#tcAdd').disabled=false; }
+}
+
+async function retireTest(key) {
+  try {
+    await fetch('/ventilator/beta/test-cases/'+encodeURIComponent(key)+'/retire', { method:'POST', headers:{'Content-Type':'application/json'}, body:'{}' });
+    await loadData();
+  } catch (e) {}
 }
 
 async function saveRun(test_key, status, notes) {

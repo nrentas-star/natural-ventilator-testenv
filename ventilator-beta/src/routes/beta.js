@@ -9,7 +9,10 @@ import {
   getTestCases, getTestRuns, upsertTestRun, getUserFeedback,
   insertDeploy, getRecentDeploys,
   getNotices, insertNotice, retireNotice,
+  insertTestCase, retireTestCase,
 } from '../db.js';
+
+const TEST_AREAS = ['Heat Load','Airflow','Validation','Vent Type','Louver','Reset','Design Comparison','PDF Export','Feedback Widget'];
 
 const execFileP = promisify(execFile);
 const router = Router();
@@ -98,6 +101,41 @@ router.post('/ventilator/beta/notices/:id/retire', requireAuth, requireVentilato
 });
 
 // ── Save a test result (upsert per user+test) ──────────────────────────────
+// ── Manage test cases (can_deploy only) ─────────────────────────────────────
+router.post('/ventilator/beta/test-cases', requireAuth, requireVentilatorBeta, requireCanDeploy, async (req, res) => {
+  const { area, title, steps, expected } = req.body || {};
+  if (!TEST_AREAS.includes(area)) {
+    return res.status(400).json({ ok: false, error: 'Pick a valid area' });
+  }
+  if (!title || String(title).trim().length < 3) {
+    return res.status(400).json({ ok: false, error: 'Title required' });
+  }
+  try {
+    const test_key = await insertTestCase({
+      area,
+      title: String(title).trim().slice(0, 255),
+      steps: (steps || '').slice(0, 2000),
+      expected: (expected || '').slice(0, 2000),
+    });
+    res.json({ ok: true, test_key });
+  } catch (err) {
+    console.error('[beta] test-case create error:', err.message);
+    res.status(500).json({ ok: false, error: 'Could not add test' });
+  }
+});
+
+router.post('/ventilator/beta/test-cases/:key/retire', requireAuth, requireVentilatorBeta, requireCanDeploy, async (req, res) => {
+  const key = req.params.key;
+  if (!key) return res.status(400).json({ ok: false, error: 'bad key' });
+  try {
+    await retireTestCase(key);
+    res.json({ ok: true });
+  } catch (err) {
+    console.error('[beta] test-case retire error:', err.message);
+    res.status(500).json({ ok: false, error: 'Could not retire test' });
+  }
+});
+
 router.post('/ventilator/beta/test-run', requireAuth, requireVentilatorBeta, async (req, res) => {
   const { test_key, status, notes } = req.body || {};
   if (!test_key || typeof test_key !== 'string') {

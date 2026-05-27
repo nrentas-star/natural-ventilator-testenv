@@ -49,6 +49,24 @@ export async function getTestCases() {
   return rows;
 }
 
+/** Add a test case. Auto-generates a unique test_key and appends to the end (max seq + 1). */
+export async function insertTestCase({ area, title, steps, expected }) {
+  const [[{ nextSeq }]] = await getPool().query(
+    'SELECT COALESCE(MAX(seq), 0) + 1 AS nextSeq FROM ventilator_test_cases'
+  );
+  const test_key = 'tc-' + Date.now().toString(36) + '-' + Math.floor(Math.random() * 1e4).toString(36);
+  await getPool().execute(
+    'INSERT INTO ventilator_test_cases (test_key, area, seq, title, steps, expected, active) VALUES (?, ?, ?, ?, ?, ?, 1)',
+    [test_key, area, nextSeq, title, steps || '', expected || '']
+  );
+  return test_key;
+}
+
+/** Retire a test case (active = 0) — hides it suite-wide, keeps the row + run history. */
+export async function retireTestCase(test_key) {
+  await getPool().execute('UPDATE ventilator_test_cases SET active = 0 WHERE test_key = ?', [test_key]);
+}
+
 /** A user's latest run status per test_key. */
 export async function getTestRuns(email) {
   const [rows] = await getPool().execute(
