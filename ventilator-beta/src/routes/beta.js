@@ -10,6 +10,7 @@ import {
   insertDeploy, getRecentDeploys,
   getNotices, insertNotice, retireNotice,
   insertTestCase, retireTestCase,
+  recentBetaActivity,
 } from '../db.js';
 
 const TEST_AREAS = ['Heat Load','Airflow','Validation','Vent Type','Louver','Reset','Design Comparison','PDF Export','Feedback Widget'];
@@ -49,6 +50,12 @@ router.get('/ventilator/beta/data', requireAuth, requireVentilatorBeta, async (r
     console.error('[beta] data error:', err.message);
     res.status(500).json({ ok: false, error: 'Could not load beta data' });
   }
+});
+
+// ── Recent activity ticker feed (last 3 beta actions across all users) ──────
+router.get('/ventilator/beta/activity', requireAuth, requireVentilatorBeta, async (req, res) => {
+  try { res.json({ ok: true, activity: await recentBetaActivity(3) }); }
+  catch (err) { console.error('[beta] activity error:', err.message); res.json({ ok: false, activity: [] }); }
 });
 
 // ── Notices + Latest Updates ────────────────────────────────────────────────

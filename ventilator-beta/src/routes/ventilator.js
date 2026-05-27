@@ -159,6 +159,10 @@ body{font-family:'Inter',system-ui,sans-serif;background:#f0f4f8;color:#0d1f3c;h
 .compose select,.compose input,.compose textarea{width:100%;border:1.5px solid #d1d5db;border-radius:6px;padding:7px 9px;font-family:inherit;font-size:12px;margin-bottom:7px;outline:none}
 .compose textarea{resize:vertical;min-height:48px}
 .compose .row{display:flex;gap:7px}.compose .row>*{flex:1}
+.acttick{display:none;align-items:center;gap:12px;background:#0d1f3c;color:#dde1ed;padding:8px 18px;font-size:12.5px;border-bottom:1px solid rgba(255,255,255,.08)}
+.acttick.show{display:flex}
+.acttick__label{flex-shrink:0;color:#e07c24;font-weight:700;letter-spacing:1.5px;font-size:10px;text-transform:uppercase}
+.acttick__item{transition:opacity .22s;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 </style>
 </head>
 <body>
@@ -169,6 +173,7 @@ body{font-family:'Inter',system-ui,sans-serif;background:#f0f4f8;color:#0d1f3c;h
   <div class="header__user"><span class="header__role">${roleLabel}</span><span class="header__name">${escH(first_name)}</span><div class="header__avatar">${initials}</div></div>
 </header>
 <div id="noticeBanner"></div>
+<div id="activityTicker" class="acttick"></div>
 <div class="stage"><iframe class="calc-frame" id="calcFrame" src="/ventilator/app" title="Natural Ventilator Selector"></iframe></div>
 <footer class="footer">
   <span class="footer__text">&copy; 2026 Moffitt Corporation &nbsp;&middot;&nbsp; Beta Test Environment</span>
@@ -233,6 +238,17 @@ let DATA = null;
 let NOTICES = { notices: [], updates: [], can_deploy: CAN_DEPLOY };
 const dismissed = JSON.parse(localStorage.getItem('vbeta_dismissed')||'[]');
 fetch('/ventilator/beta/notices').then(r=>r.json()).then(d=>{ if(d.ok){ NOTICES=d; renderBanner(); } }).catch(()=>{});
+
+// ── Recent activity ticker — loads on page open, rotates the last 3 beta actions ──
+function vAgo(t){ if(!t) return ''; var d=(Date.now()-new Date(t).getTime())/1000; if(d<0)d=0; if(d<60)return Math.floor(d)+'s ago'; if(d<3600)return Math.floor(d/60)+'m ago'; if(d<86400)return Math.floor(d/3600)+'h ago'; return Math.floor(d/86400)+'d ago'; }
+fetch('/ventilator/beta/activity').then(function(r){return r.json();}).then(function(d){
+  if(!d||!d.ok||!d.activity||!d.activity.length) return;
+  var bar=$('#activityTicker'); bar.classList.add('show');
+  bar.innerHTML='<span class="acttick__label">Recent</span><span class="acttick__item" id="actItem"></span>';
+  var item=$('#actItem'), i=0, A=d.activity;
+  function showAct(){ var a=A[i%A.length]; item.style.opacity='0'; setTimeout(function(){ item.textContent=a.actor+' '+a.label+' · '+vAgo(a.ts); item.style.opacity='1'; },220); i++; }
+  showAct(); if(A.length>1) setInterval(showAct,4500);
+}).catch(function(){});
 
 function renderBanner(){
   const active=(NOTICES.notices||[]).filter(n=>!dismissed.includes(n.id));
