@@ -134,7 +134,7 @@ body{font-family:'Inter',system-ui,sans-serif;background:#f0f4f8;color:#0d1f3c;h
 <body>
 <header class="header">
   <a href="/" class="header__logo"><span class="header__logo-pill">MOFFITT</span></a>
-  <div class="header__breadcrumb"><a href="/">TOOLS</a><span class="header__breadcrumb-sep">/</span><span>VENTILATOR SELECTOR</span></div>
+  <div class="header__breadcrumb"><a href="https://connect.moffittcorp.com/">&#8592; CONNECT</a><span class="header__breadcrumb-sep">/</span><a href="/">TOOLS</a><span class="header__breadcrumb-sep">/</span><span>VENTILATOR SELECTOR</span></div>
   <div class="header__spacer"></div>
   <div class="header__user"><span class="header__role">${roleLabel}</span><span class="header__name">${escH(first_name)}</span><div class="header__avatar">${initials}</div></div>
 </header>

@@ -59,7 +59,10 @@ export function requireCanDeploy(req, res, next) {
   next();
 }
 
-function redirectToLogin(req, res) {
-  const next = encodeURIComponent(req.originalUrl);
-  res.redirect(302, `/auth/login?next=${next}`);
+// Connect is the single front door / login. Unauthenticated requests go to the
+// connect portal (not a tools-local login), so everyone signs in once at connect
+// and reaches tools via the portal. SSO (shared mcp_portal cookie) means a user
+// already signed in at connect arrives here authenticated.
+function redirectToLogin(_req, res) {
+  res.redirect(302, 'https://connect.moffittcorp.com/');
 }

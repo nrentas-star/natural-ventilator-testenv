@@ -63,6 +63,9 @@ body{font-family:'Inter',system-ui,sans-serif;background:#f0f4f8;color:#0d1f3c;m
 .header__logo{display:flex;align-items:center;gap:12px;text-decoration:none}
 .header__logo-pill{background:#fff;border-radius:6px;padding:4px 10px;font-weight:700;font-size:13px;color:#0d1f3c;letter-spacing:.5px}
 .header__section{font-size:11px;font-weight:600;letter-spacing:2px;color:rgba(255,255,255,.45);text-transform:uppercase}
+.header__back{font-size:12px;font-weight:500;color:rgba(255,255,255,.6);text-decoration:none;display:inline-flex;align-items:center;gap:5px}
+.header__back:hover{color:#fff}
+.header__sep{color:rgba(255,255,255,.2);margin:0 4px}
 .header__spacer{flex:1}
 .header__user{display:flex;align-items:center;gap:10px}
 .header__role{font-size:11px;font-weight:600;letter-spacing:1px;color:rgba(255,255,255,.5);text-transform:uppercase}
@@ -100,7 +103,9 @@ body{font-family:'Inter',system-ui,sans-serif;background:#f0f4f8;color:#0d1f3c;m
 </head>
 <body>
 <header class="header">
-  <a href="https://connect.moffittcorp.com" class="header__logo"><span class="header__logo-pill">MOFFITT</span></a>
+  <a href="https://connect.moffittcorp.com/" class="header__logo"><span class="header__logo-pill">MOFFITT</span></a>
+  <a href="https://connect.moffittcorp.com/" class="header__back">&#8592; Connect</a>
+  <span class="header__sep">/</span>
   <span class="header__section">TOOLS</span>
   <div class="header__spacer"></div>
   <div class="header__user">
