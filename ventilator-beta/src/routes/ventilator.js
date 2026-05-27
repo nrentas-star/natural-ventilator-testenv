@@ -39,7 +39,7 @@ function ventilatorShell({ first_name, roleLabel, userEmail, canDeploy }) {
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 body{font-family:'Inter',system-ui,sans-serif;background:#f0f4f8;color:#0d1f3c;height:100vh;display:flex;flex-direction:column;overflow:hidden}
-.header{background:#0d1f3c;height:64px;display:flex;align-items:center;padding:0 28px;gap:16px;flex-shrink:0}
+.header{background:#0d1f3c;height:64px;display:flex;align-items:center;padding:0 28px;gap:16px;position:relative;flex-shrink:0}
 .header__logo{display:flex;align-items:center;gap:12px;text-decoration:none}
 .header__logo-pill{background:#fff;border-radius:6px;padding:4px 10px;font-weight:700;font-size:13px;color:#0d1f3c;letter-spacing:.5px}
 .header__breadcrumb{font-size:11px;font-weight:600;letter-spacing:2px;color:rgba(255,255,255,.45);text-transform:uppercase;display:flex;align-items:center;gap:8px}
@@ -159,21 +159,22 @@ body{font-family:'Inter',system-ui,sans-serif;background:#f0f4f8;color:#0d1f3c;h
 .compose select,.compose input,.compose textarea{width:100%;border:1.5px solid #d1d5db;border-radius:6px;padding:7px 9px;font-family:inherit;font-size:12px;margin-bottom:7px;outline:none}
 .compose textarea{resize:vertical;min-height:48px}
 .compose .row{display:flex;gap:7px}.compose .row>*{flex:1}
-.acttick{display:none;align-items:center;gap:12px;background:#0d1f3c;color:#dde1ed;padding:8px 18px;font-size:12.5px;border-bottom:1px solid rgba(255,255,255,.08)}
+.acttick{display:none;position:absolute;left:50%;top:0;height:64px;transform:translateX(-50%);align-items:center;gap:10px;max-width:44%;font-size:12px;color:#cdd5e6;pointer-events:none}
 .acttick.show{display:flex}
 .acttick__label{flex-shrink:0;color:#e07c24;font-weight:700;letter-spacing:1.5px;font-size:10px;text-transform:uppercase}
 .acttick__item{transition:opacity .22s;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+@media(max-width:820px){.acttick{display:none !important}}
 </style>
 </head>
 <body>
 <header class="header">
+  <div id="activityTicker" class="acttick"></div>
   <a href="/" class="header__logo"><span class="header__logo-pill">MOFFITT</span></a>
   <div class="header__breadcrumb"><a href="https://connect.moffittcorp.com/">&#8592; CONNECT</a><span class="header__breadcrumb-sep">/</span><a href="/">TOOLS</a><span class="header__breadcrumb-sep">/</span><span>VENTILATOR SELECTOR</span></div>
   <div class="header__spacer"></div>
   <div class="header__user"><span class="header__role">${roleLabel}</span><span class="header__name">${escH(first_name)}</span><div class="header__avatar">${initials}</div></div>
 </header>
 <div id="noticeBanner"></div>
-<div id="activityTicker" class="acttick"></div>
 <div class="stage"><iframe class="calc-frame" id="calcFrame" src="/ventilator/app" title="Natural Ventilator Selector"></iframe></div>
 <footer class="footer">
   <span class="footer__text">&copy; 2026 Moffitt Corporation &nbsp;&middot;&nbsp; Beta Test Environment</span>
