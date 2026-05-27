@@ -217,6 +217,7 @@
           <button id="calc" type="button">Calculate</button>
           <button id="reset" type="button" class="secondary">Reset</button>
           <button id="exportPdf" type="button" class="secondary" onclick="compute();window.print();">Export PDF</button>
+          <button id="emailResults" type="button" class="secondary" onclick="emailMyResults()">Email me results</button>
         </div>
 
         <div class="small" id="msg" style="margin-top:10px"></div>
@@ -364,6 +365,37 @@
     const u = document.querySelector('input[name="louverUnit"]:checked');
     const lbl = document.getElementById('louverSizeLabel');
     if(lbl) lbl.textContent = 'Wall Louver Size (' + (u && u.value === 'in' ? 'in' : 'ft') + ')';
+  }
+
+  function emailMyResults(){
+    try{ compute(); }catch(_){}
+    function q(sel){ var e=document.querySelector(sel); return e?(e.textContent||'').trim():''; }
+    var results=[
+      ['Vent Length (per vent)', q('#r_ventLen')],
+      ['Vent Velocity', q('#r_vout')],
+      ['Wall Louver Quantity', q('#r_louversNeed')],
+      ['Wall Louver Velocity', q('#r_louverVel')]
+    ].filter(function(x){return x[1];}).map(function(x){return {label:x[0],value:x[1]};});
+    if(!results.length){ showToast('Enter inputs and Calculate first'); return; }
+    function flabel(f){ var l=f.querySelector('label'); if(!l) return ''; var c=l.cloneNode(true); var b=c.querySelectorAll('button'); for(var i=0;i<b.length;i++) b[i].remove(); return (c.textContent||'').trim().replace(/\s+/g,' '); }
+    var inputs=[]; var fields=document.querySelectorAll('.card .field');
+    for(var i=0;i<fields.length;i++){
+      var f=fields[i]; if(f.offsetParent===null) continue;
+      var label=flabel(f); if(!label) continue;
+      var sel=f.querySelector('select');
+      var ti=f.querySelector('input[type=text],input[type=number],input[inputmode]');
+      var val='';
+      if(sel){ var op=sel.options[sel.selectedIndex]; val=op?op.text:sel.value; }
+      else if(ti){ if(ti.disabled||ti.offsetParent===null) continue; val=ti.value; }
+      else { var ck=f.querySelector('input[type=radio]:checked'); if(ck){ var lb=ck.closest('label'); val=lb?(lb.textContent||'').trim():ck.value; } }
+      if(val!=null && String(val).trim()!=='') inputs.push({label:label,value:String(val).trim()});
+    }
+    var btn=document.getElementById('emailResults'); if(btn) btn.disabled=true;
+    fetch('/ventilator/email-results',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({inputs:inputs,results:results})})
+      .then(function(r){ return r.json().then(function(j){ return {ok:r.ok,j:j}; }).catch(function(){ return {ok:r.ok,j:null}; }); })
+      .then(function(out){ if(out.ok && out.j && out.j.ok){ showToast('Results emailed to '+(out.j.to||'you')); } else { showToast((out.j&&out.j.error)||'Could not send email'); } })
+      .catch(function(){ showToast('Network error sending email'); })
+      .finally(function(){ if(btn) btn.disabled=false; });
   }
 
   function compute(){
