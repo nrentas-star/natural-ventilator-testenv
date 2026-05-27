@@ -167,29 +167,24 @@ export function verifyOtp(email, code) {
 
 
 
-/** Last N beta actions across runs/feedback/deploys/notices, for the activity ticker.
- *  Actor = email name-part. COLLATE forces one collation so the UNION across tables
- *  with differing column collations doesn't raise "illegal mix of collations". */
-export async function recentBetaActivity(limit = 3) {
-  const n = Math.min(Math.max(parseInt(limit, 10) || 3, 1), 20);
+
+/** Recent USER activity + reported bugs/feedback for the ticker (excludes system notices). */
+export async function recentBetaActivity(limit = 5) {
+  const n = Math.min(Math.max(parseInt(limit, 10) || 5, 1), 20);
   const [rows] = await getPool().query(
     `SELECT actor, ts, label FROM (
        SELECT (SUBSTRING_INDEX(r.user_email,'@',1) COLLATE utf8mb4_general_ci) AS actor, r.updated_at AS ts,
-              (CONCAT('marked a ', COALESCE(cs.area,'test'), ' test ', UPPER(r.status)) COLLATE utf8mb4_general_ci) AS label
+              (CONCAT('marked ', COALESCE(cs.area,'a'), ' test ', UPPER(r.status)) COLLATE utf8mb4_general_ci) AS label
          FROM ventilator_test_runs r
          LEFT JOIN ventilator_test_cases cs ON cs.test_key = r.test_key
        UNION ALL
        SELECT (SUBSTRING_INDEX(f.user_email,'@',1) COLLATE utf8mb4_general_ci), f.created_at,
-              (CONCAT('reported a ', f.feedback_type, COALESCE(CONCAT(' (', f.area, ')'), '')) COLLATE utf8mb4_general_ci)
+              (CONCAT('reported a ', f.feedback_type, COALESCE(CONCAT(' in ', f.area), '')) COLLATE utf8mb4_general_ci)
          FROM ventilator_feedback f
        UNION ALL
        SELECT (SUBSTRING_INDEX(d.user_email,'@',1) COLLATE utf8mb4_general_ci), d.created_at,
               (CONCAT('deployed the calculator (', d.method, ')') COLLATE utf8mb4_general_ci)
          FROM ventilator_deploys d
-       UNION ALL
-       SELECT (SUBSTRING_INDEX(n.created_by,'@',1) COLLATE utf8mb4_general_ci), n.created_at,
-              (CONCAT('posted a ', n.kind, ': ', n.title) COLLATE utf8mb4_general_ci)
-         FROM ventilator_notices n
      ) x
      WHERE ts IS NOT NULL
      ORDER BY ts DESC
