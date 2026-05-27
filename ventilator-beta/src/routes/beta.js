@@ -56,8 +56,14 @@ router.get('/ventilator/beta/data', requireAuth, requireVentilatorBeta, async (r
 
 // ── Recent activity ticker feed (last 3 beta actions across all users) ──────
 router.get('/ventilator/beta/activity', requireAuth, requireVentilatorBeta, async (req, res) => {
-  try { res.json({ ok: true, activity: await recentBetaActivity(6) }); }
-  catch (err) { console.error('[beta] activity error:', err.message); res.json({ ok: false, activity: [] }); }
+  try {
+    const [acts, gits] = await Promise.all([recentBetaActivity(6), gitTickerItems(3)]);
+    const merged = [...acts, ...gits]
+      .filter(a => a && a.ts)
+      .sort((a, b) => new Date(b.ts) - new Date(a.ts))
+      .slice(0, 9);
+    res.json({ ok: true, activity: merged });
+  } catch (err) { console.error('[beta] activity error:', err.message); res.json({ ok: false, activity: [] }); }
 });
 
 // ── Notices + Latest Updates ────────────────────────────────────────────────
@@ -240,6 +246,23 @@ async function gitChangelog() {
     return stdout.trim().split('\n').filter(Boolean).map(line => {
       const parts = line.split(SEP);
       return { hash: parts[0], author: parts[1], date: parts[2], subject: parts[3] };
+    });
+  } catch {
+    return [];
+  }
+}
+
+async function gitTickerItems(limit = 3) {
+  const n = Math.min(Math.max(parseInt(limit, 10) || 3, 1), 10);
+  try {
+    const { stdout } = await execFileP(
+      'git', ['-C', REPO, 'log', '--pretty=%an<<S>>%cI<<S>>%s', '-' + n],
+      { timeout: 10000 }
+    );
+    return stdout.trim().split('\n').filter(Boolean).map(line => {
+      const parts = line.split('<<S>>');
+      const actor = String(parts[0] || 'git').trim().split(/\s+/)[0].toLowerCase();
+      return { actor, ts: parts[1], label: 'pushed: ' + (parts[2] || '') };
     });
   } catch {
     return [];
