@@ -168,7 +168,7 @@ body{font-family:'Inter',system-ui,sans-serif;background:#f0f4f8;color:#0d1f3c;h
 .compose select,.compose input,.compose textarea{width:100%;border:1.5px solid #d1d5db;border-radius:6px;padding:7px 9px;font-family:inherit;font-size:12px;margin-bottom:7px;outline:none}
 .compose textarea{resize:vertical;min-height:48px}
 .compose .row{display:flex;gap:7px}.compose .row>*{flex:1}
-.acttick{display:none;position:absolute;left:50%;top:0;height:64px;transform:translateX(-50%);align-items:center;gap:10px;max-width:44%;font-size:12px;color:#cdd5e6;pointer-events:none}
+.acttick{display:none;position:absolute;left:50%;top:0;height:64px;transform:translateX(-50%);align-items:center;justify-content:center;text-align:center;gap:10px;max-width:44%;font-size:12px;color:#cdd5e6;pointer-events:none}
 .acttick.show{display:flex}
 .acttick__label{flex-shrink:0;color:#e07c24;font-weight:700;letter-spacing:1.5px;font-size:10px;text-transform:uppercase}
 .acttick__item{transition:opacity .22s;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -257,7 +257,7 @@ fetch('/ventilator/beta/activity').then(function(r){return r.json();}).then(func
   bar.innerHTML='<span class="acttick__label">Recent</span><span class="acttick__item" id="actItem"></span>';
   var item=$('#actItem'), i=0, A=d.activity;
   function showAct(){ var a=A[i%A.length]; item.style.opacity='0'; setTimeout(function(){ item.textContent=a.actor+' '+a.label+' · '+vAgo(a.ts); item.style.opacity='1'; },220); i++; }
-  showAct(); if(A.length>1) setInterval(showAct,4500);
+  showAct(); if(A.length>1) setInterval(showAct,10000);
 }).catch(function(){});
 
 function renderBanner(){
