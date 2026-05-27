@@ -187,6 +187,7 @@ router.post('/ventilator/beta/deploy/upload', requireAuth, requireVentilatorBeta
   if (html.length > 2 * 1024 * 1024) {
     return res.status(400).json({ ok: false, error: 'File too large' });
   }
+  const note = (req.body && typeof req.body.note === 'string') ? req.body.note.trim().slice(0, 200) : '';
   let backupName = null;
   try {
     backupName = await backupLive();
@@ -196,8 +197,19 @@ router.post('/ventilator/beta/deploy/upload', requireAuth, requireVentilatorBeta
     await insertDeploy({ user_email: req.user.email, method: 'upload', detail: err.message, backup_file: backupName, ok: false }).catch(() => {});
     return res.status(500).json({ ok: false, error: 'Could not write file' });
   }
-  await insertDeploy({ user_email: req.user.email, method: 'upload', detail: `uploaded ${html.length} bytes`, backup_file: backupName, ok: true }).catch(() => {});
-  res.json({ ok: true, backup: backupName, bytes: html.length });
+  // Version the upload: write it into the repo, commit as the uploader, push to master.
+  let git = { committed: false, pushed: false, hash: null, error: null };
+  try {
+    git = await commitCalc(html, req.user.email, note);
+  } catch (e) {
+    git.error = e.message;
+    console.error('[beta] upload commit error:', e.message);
+  }
+  const detail = 'uploaded ' + html.length + ' bytes'
+    + (git.committed ? ' -> committed ' + git.hash + (git.pushed ? ' (pushed)' : ' (local only)') : ' (no git change)')
+    + (git.error ? ' [git: ' + git.error + ']' : '');
+  await insertDeploy({ user_email: req.user.email, method: 'upload', detail, backup_file: backupName, ok: true }).catch(() => {});
+  res.json({ ok: true, backup: backupName, bytes: html.length, committed: git.committed, hash: git.hash, pushed: git.pushed, gitError: git.error });
 });
 
 // ── Deploy: git pull the repo and publish its calculator (can_deploy only) ──
@@ -267,6 +279,27 @@ async function gitTickerItems(limit = 3) {
   } catch {
     return [];
   }
+}
+
+async function commitCalc(html, userEmail, note) {
+  await writeFile(REPO_CALC, html, 'utf8');
+  await execFileP('git', ['-C', REPO, 'add', '--', 'public/index.html'], { timeout: 10000 });
+  const { stdout: status } = await execFileP('git', ['-C', REPO, 'status', '--porcelain', '--', 'public/index.html'], { timeout: 10000 });
+  if (!status.trim()) {
+    return { committed: false, pushed: false, hash: await gitHead().catch(() => null), error: null };
+  }
+  const uname = String(userEmail).split('@')[0];
+  const subject = note ? ('calc update by ' + uname + ': ' + note) : ('calc update by ' + uname + ' (beta upload)');
+  await execFileP('git', ['-C', REPO, '-c', 'user.email=' + userEmail, '-c', 'user.name=' + uname, 'commit', '-m', subject], { timeout: 15000 });
+  const hash = await gitHead().catch(() => null);
+  let pushed = false, error = null;
+  try {
+    await execFileP('git', ['-C', REPO, 'push', 'origin', 'HEAD:master'], { timeout: 30000, env: { ...process.env, GIT_TERMINAL_PROMPT: '0' } });
+    pushed = true;
+  } catch (e) {
+    error = 'push failed (committed locally)';
+  }
+  return { committed: true, pushed, hash, error };
 }
 
 async function gitHead() {

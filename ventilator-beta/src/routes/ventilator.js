@@ -483,6 +483,7 @@ function renderUpdates() {
     $('#deployArea').innerHTML =
       '<div class="deploy-box"><h4>Deploy (you have publish rights)</h4>'
       + '<div class="fld"><label>Upload new calculator HTML</label><input type="file" id="depFile" accept=".html,text/html"></div>'
+      + '<div class="fld"><label>Version note (optional)</label><input type="text" id="depNote" placeholder="Describe this change" maxlength="200"></div>'
       + '<button class="btn amber" id="depUpload">Upload &amp; Publish</button> '
       + '<button class="btn" id="depGit">Deploy latest from Git</button>'
       + '<div class="note" id="depMsg"></div></div>';
@@ -557,11 +558,13 @@ async function doUpload() {
   msg.textContent='Reading…'; msg.className='note';
   const text = await f.text();
   const content_b64 = btoa(unescape(encodeURIComponent(text)));
+  const note = (($('#depNote') && $('#depNote').value) || '').trim();
   $('#depUpload').disabled=true; msg.textContent='Publishing…';
   try {
-    const r = await fetch('/ventilator/beta/deploy/upload', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ content_b64 }) });
+    const r = await fetch('/ventilator/beta/deploy/upload', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ content_b64, note }) });
     const j = await r.json(); if (!j.ok) throw new Error(j.error||'failed');
-    msg.textContent='✓ Published ('+j.bytes+' bytes). Reloading calculator…'; msg.className='note ok';
+    var vtxt = j.committed ? (' · version '+(j.hash||'')+(j.pushed?'':' (local only)')) : '';
+    msg.textContent='✓ Published ('+j.bytes+' bytes)'+vtxt+'. Reloading calculator…'; msg.className='note ok';
     reloadCalc(); loadData();
   } catch (e) { msg.textContent='Error: '+e.message; msg.className='note err'; }
   finally { $('#depUpload').disabled=false; }
