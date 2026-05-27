@@ -40,6 +40,7 @@ router.post('/feedback', requireAuth, requireVentilatorBeta, async (req, res) =>
 
 // ── One-click respond page (public, token-gated) ────────────────────────────
 router.get('/feedback/respond', async (req, res) => {
+  res.set('Cache-Control', 'no-store');
   const p = verifyFeedbackToken(req.query.t);
   if (!p) {
     return res.status(400).send(pageShell('Link expired',
@@ -59,6 +60,7 @@ router.get('/feedback/respond', async (req, res) => {
 
 // ── Store a response (public, token-gated) ──────────────────────────────────
 router.post('/feedback/respond', async (req, res) => {
+  res.set('Cache-Control', 'no-store');
   const { t, body } = req.body;
   const p = verifyFeedbackToken(t);
   if (!p) {
