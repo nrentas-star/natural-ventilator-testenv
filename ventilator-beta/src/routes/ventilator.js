@@ -129,6 +129,31 @@ body{font-family:'Inter',system-ui,sans-serif;background:#f0f4f8;color:#0d1f3c;h
 .deploy-box{background:#fff8f0;border:1px solid #f0d9bd;border-radius:8px;padding:14px;margin-bottom:16px}
 .deploy-box h4{font-size:12px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:#b45309;margin-bottom:10px}
 .muted{color:#9aa4b2;font-size:12px;text-align:center;padding:14px}
+/* Notice banner (top of tool) */
+#noticeBanner{flex-shrink:0}
+.nb{display:flex;align-items:flex-start;gap:10px;padding:10px 28px;font-size:13px;border-bottom:1px solid rgba(0,0,0,.06)}
+.nb__ico{flex-shrink:0;font-weight:700;font-size:12px;line-height:1.4}
+.nb__txt{flex:1;line-height:1.45}.nb__txt b{font-weight:700}
+.nb__x{background:none;border:none;cursor:pointer;font-size:16px;line-height:1;color:inherit;opacity:.55;padding:0}
+.nb__x:hover{opacity:1}
+.nb--info{background:#eff4ff;color:#1e3a8a}
+.nb--warning{background:#fff7ed;color:#9a3412}
+.nb--success{background:#ecfdf3;color:#166534}
+/* Notice / update items in panel */
+.ntc{border:1px solid #e5e9f0;border-radius:8px;padding:10px 12px;margin-bottom:8px}
+.ntc__top{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:4px}
+.ntc__title{font-size:13px;font-weight:700;color:#0d1f3c}
+.ntc__body{font-size:12px;color:#475467;line-height:1.45;white-space:pre-wrap}
+.ntc__meta{font-size:11px;color:#9aa4b2;margin-top:5px}
+.ntc__retire{background:none;border:1px solid #e5e9f0;border-radius:5px;font-size:11px;color:#b91c1c;cursor:pointer;padding:2px 8px;font-family:inherit}
+.ntc__retire:hover{background:#fef2f2}
+.sev{display:inline-block;padding:1px 6px;border-radius:4px;font-size:10px;font-weight:700;letter-spacing:.5px;text-transform:uppercase}
+.sev--info{background:#eff4ff;color:#2563eb}.sev--warning{background:#fff7ed;color:#c2410c}.sev--success{background:#ecfdf3;color:#16a34a}
+.compose{background:#f8fafc;border:1px solid #e5e9f0;border-radius:8px;padding:12px;margin-bottom:16px}
+.compose h4{font-size:11px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:#0d1f3c;margin-bottom:8px}
+.compose select,.compose input,.compose textarea{width:100%;border:1.5px solid #d1d5db;border-radius:6px;padding:7px 9px;font-family:inherit;font-size:12px;margin-bottom:7px;outline:none}
+.compose textarea{resize:vertical;min-height:48px}
+.compose .row{display:flex;gap:7px}.compose .row>*{flex:1}
 </style>
 </head>
 <body>
@@ -138,6 +163,7 @@ body{font-family:'Inter',system-ui,sans-serif;background:#f0f4f8;color:#0d1f3c;h
   <div class="header__spacer"></div>
   <div class="header__user"><span class="header__role">${roleLabel}</span><span class="header__name">${escH(first_name)}</span><div class="header__avatar">${initials}</div></div>
 </header>
+<div id="noticeBanner"></div>
 <div class="stage"><iframe class="calc-frame" id="calcFrame" src="/ventilator/app" title="Natural Ventilator Selector"></iframe></div>
 <footer class="footer">
   <span class="footer__text">&copy; 2026 Moffitt Corporation &nbsp;&middot;&nbsp; Beta Test Environment</span>
@@ -176,8 +202,13 @@ body{font-family:'Inter',system-ui,sans-serif;background:#f0f4f8;color:#0d1f3c;h
     </div>
 
     <div class="beta-view" id="view-updates">
+      <div id="noticeCompose"></div>
+      <h3 style="font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#0d1f3c;margin:0 0 8px;padding-bottom:4px;border-bottom:1px solid #eef2f7">Notices</h3>
+      <div id="noticeList"><div class="muted">No notices.</div></div>
+      <h3 style="font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#0d1f3c;margin:20px 0 8px;padding-bottom:4px;border-bottom:1px solid #eef2f7">What's New</h3>
+      <div id="whatsNew"><div class="muted">No updates yet.</div></div>
       <div id="deployArea"></div>
-      <h3 style="font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#0d1f3c;margin:0 0 8px;padding-bottom:4px;border-bottom:1px solid #eef2f7">Latest Changes</h3>
+      <h3 style="font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#0d1f3c;margin:20px 0 8px;padding-bottom:4px;border-bottom:1px solid #eef2f7">Git Changelog</h3>
       <div id="changelog"><div class="muted">Loading…</div></div>
       <h3 style="font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#0d1f3c;margin:20px 0 8px;padding-bottom:4px;border-bottom:1px solid #eef2f7">Recent Deploys</h3>
       <div id="deployLog"><div class="muted">None yet.</div></div>
@@ -190,6 +221,25 @@ const CAN_DEPLOY = ${canDeploy ? 'true' : 'false'};
 const $ = s => document.querySelector(s);
 const esc = s => String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 let DATA = null;
+
+// ── Notice banner — loads on page open, independent of the slide-out panel ──
+let NOTICES = { notices: [], updates: [], can_deploy: CAN_DEPLOY };
+const dismissed = JSON.parse(localStorage.getItem('vbeta_dismissed')||'[]');
+fetch('/ventilator/beta/notices').then(r=>r.json()).then(d=>{ if(d.ok){ NOTICES=d; renderBanner(); } }).catch(()=>{});
+
+function renderBanner(){
+  const active=(NOTICES.notices||[]).filter(n=>!dismissed.includes(n.id));
+  $('#noticeBanner').innerHTML=active.map(n=>
+    '<div class="nb nb--'+esc(n.severity)+'"><span class="nb__ico">'+(n.severity==='warning'?'!':n.severity==='success'?'✓':'i')+'</span>'
+    +'<div class="nb__txt"><b>'+esc(n.title)+'</b>'+(n.body?' — '+esc(n.body):'')+'</div>'
+    +'<button class="nb__x" data-id="'+n.id+'" title="Dismiss">×</button></div>'
+  ).join('');
+  $('#noticeBanner').querySelectorAll('.nb__x').forEach(b=>b.addEventListener('click',()=>{
+    dismissed.push(parseInt(b.dataset.id,10));
+    localStorage.setItem('vbeta_dismissed',JSON.stringify(dismissed));
+    renderBanner();
+  }));
+}
 
 $('#betaTab').addEventListener('click', () => { $('#betaPanel').classList.add('open'); if(!DATA) loadData(); });
 $('#betaClose').addEventListener('click', () => $('#betaPanel').classList.remove('open'));
@@ -304,6 +354,8 @@ $('#fbSubmit').addEventListener('click', async () => {
 });
 
 function renderUpdates() {
+  renderNotices();
+
   const cl = DATA.changelog||[];
   $('#changelog').innerHTML = cl.length ? cl.map(c =>
     '<div class="commit"><span class="h">'+esc(c.hash)+'</span><span class="s">'+esc(c.subject)+'</span><span class="d">'+esc(c.date)+'</span></div>'
@@ -326,6 +378,66 @@ function renderUpdates() {
     $('#depUpload').addEventListener('click', doUpload);
     $('#depGit').addEventListener('click', doGitPull);
   }
+}
+
+function renderNotices() {
+  const notices = DATA.notices||[];
+  const updates = DATA.updates||[];
+  const retireBtn = n => CAN_DEPLOY ? '<button class="ntc__retire" data-id="'+n.id+'">Retire</button>' : '';
+
+  $('#noticeList').innerHTML = notices.length ? notices.map(n =>
+    '<div class="ntc"><div class="ntc__top"><span class="ntc__title">'+esc(n.title)+'</span>'
+    + '<span><span class="sev sev--'+esc(n.severity)+'">'+esc(n.severity)+'</span> '+retireBtn(n)+'</span></div>'
+    + (n.body?'<div class="ntc__body">'+esc(n.body)+'</div>':'')
+    + '<div class="ntc__meta">'+esc(n.created_by)+' · '+esc(String(n.created_at).slice(0,16).replace('T',' '))+'</div></div>'
+  ).join('') : '<div class="muted">No notices.</div>';
+
+  $('#whatsNew').innerHTML = updates.length ? updates.map(n =>
+    '<div class="ntc"><div class="ntc__top"><span class="ntc__title">'+esc(n.title)+'</span>'+retireBtn(n)+'</div>'
+    + (n.body?'<div class="ntc__body">'+esc(n.body)+'</div>':'')
+    + '<div class="ntc__meta">'+esc(String(n.created_at).slice(0,10))+'</div></div>'
+  ).join('') : '<div class="muted">No updates yet.</div>';
+
+  if (CAN_DEPLOY && !$('#ncKind')) {
+    $('#noticeCompose').innerHTML =
+      '<div class="compose"><h4>Post a notice / update</h4>'
+      + '<div class="row"><select id="ncKind"><option value="notice">Notice (banner)</option><option value="update">Update / Whats New</option></select>'
+      + '<select id="ncSev"><option value="info">Info</option><option value="warning">Warning</option><option value="success">Success</option></select></div>'
+      + '<input id="ncTitle" placeholder="Title" maxlength="200">'
+      + '<textarea id="ncBody" placeholder="Message (optional)"></textarea>'
+      + '<button class="btn" id="ncPost">Post</button> <span class="note" id="ncMsg"></span></div>';
+    $('#ncPost').addEventListener('click', postNotice);
+  }
+  document.querySelectorAll('.ntc__retire').forEach(b => b.addEventListener('click', () => retireNotice(b.dataset.id)));
+}
+
+async function postNotice() {
+  const title = $('#ncTitle').value.trim(); const msg = $('#ncMsg');
+  if (!title) { $('#ncTitle').focus(); return; }
+  $('#ncPost').disabled = true; msg.textContent = 'Posting…'; msg.className='note';
+  try {
+    const r = await fetch('/ventilator/beta/notices', { method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ kind:$('#ncKind').value, severity:$('#ncSev').value, title, body:$('#ncBody').value.trim() }) });
+    const j = await r.json(); if (!j.ok) throw new Error(j.error||'failed');
+    $('#ncTitle').value=''; $('#ncBody').value=''; msg.textContent='✓ Posted'; msg.className='note ok';
+    await refreshNotices();
+  } catch (e) { msg.textContent='Error: '+e.message; msg.className='note err'; }
+  finally { $('#ncPost').disabled=false; }
+}
+
+async function retireNotice(id) {
+  try {
+    await fetch('/ventilator/beta/notices/'+id+'/retire', { method:'POST', headers:{'Content-Type':'application/json'}, body:'{}' });
+    await refreshNotices();
+  } catch (e) {}
+}
+
+// Re-pull notices for both the panel lists and the top banner.
+async function refreshNotices() {
+  try {
+    const d = await (await fetch('/ventilator/beta/notices')).json();
+    if (d.ok) { NOTICES = d; DATA.notices = d.notices; DATA.updates = d.updates; renderNotices(); renderBanner(); }
+  } catch (e) {}
 }
 
 async function doUpload() {

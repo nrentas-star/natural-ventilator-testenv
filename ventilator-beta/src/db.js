@@ -97,6 +97,32 @@ export async function getRecentDeploys(limit = 20) {
   return rows;
 }
 
+// ── Notices + Latest Updates (What's New) ──────────────────────────────────
+/** Active notices and updates, newest first. */
+export async function getNotices() {
+  const [rows] = await getPool().query(
+    `SELECT id, kind, severity, title, body, created_by, created_at
+     FROM ventilator_notices WHERE active = 1 ORDER BY created_at DESC LIMIT 50`
+  );
+  return rows;
+}
+
+/** Create a notice or update entry. */
+export async function insertNotice({ kind, severity, title, body, created_by }) {
+  const k = ['notice', 'update'].includes(kind) ? kind : 'notice';
+  const s = ['info', 'warning', 'success'].includes(severity) ? severity : 'info';
+  const [result] = await getPool().execute(
+    'INSERT INTO ventilator_notices (kind, severity, title, body, created_by) VALUES (?, ?, ?, ?, ?)',
+    [k, s, title, body || null, created_by]
+  );
+  return result.insertId;
+}
+
+/** Retire (deactivate) a notice/update. */
+export async function retireNotice(id) {
+  await getPool().execute('UPDATE ventilator_notices SET active = 0 WHERE id = ?', [id]);
+}
+
 // ── In-memory OTP store (single-instance PM2) ──────────────────────────────
 const otpStore = new Map();
 

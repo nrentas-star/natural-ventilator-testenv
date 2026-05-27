@@ -8,6 +8,7 @@ import { requireAuth, requireVentilatorBeta, requireCanDeploy } from '../auth/mi
 import {
   getTestCases, getTestRuns, upsertTestRun, getUserFeedback,
   insertDeploy, getRecentDeploys,
+  getNotices, insertNotice, retireNotice,
 } from '../db.js';
 
 const execFileP = promisify(execFile);
@@ -26,21 +27,73 @@ const SEP = '|@@|';  // field separator for git log parsing (never appears in co
 // ── Panel data — one call populates the whole Beta panel ────────────────────
 router.get('/ventilator/beta/data', requireAuth, requireVentilatorBeta, async (req, res) => {
   try {
-    const [cases, runs, feedback, changelog, deploys] = await Promise.all([
+    const [cases, runs, feedback, changelog, deploys, notices] = await Promise.all([
       getTestCases(),
       getTestRuns(req.user.email),
       getUserFeedback(req.user.email),
       gitChangelog(),
       getRecentDeploys(10),
+      getNotices(),
     ]);
     res.json({
       ok: true,
       user: { email: req.user.email, can_deploy: !!req.user.can_deploy },
       cases, runs, feedback, changelog, deploys,
+      notices: notices.filter(n => n.kind === 'notice'),
+      updates: notices.filter(n => n.kind === 'update'),
     });
   } catch (err) {
     console.error('[beta] data error:', err.message);
     res.status(500).json({ ok: false, error: 'Could not load beta data' });
+  }
+});
+
+// ── Notices + Latest Updates ────────────────────────────────────────────────
+// Lightweight list for the banner (and the panel). Returns active notices/updates.
+router.get('/ventilator/beta/notices', requireAuth, requireVentilatorBeta, async (req, res) => {
+  try {
+    const all = await getNotices();
+    res.json({
+      ok: true,
+      can_deploy: !!req.user.can_deploy,
+      notices: all.filter(n => n.kind === 'notice'),
+      updates: all.filter(n => n.kind === 'update'),
+    });
+  } catch (err) {
+    console.error('[beta] notices error:', err.message);
+    res.status(500).json({ ok: false, error: 'Could not load notices' });
+  }
+});
+
+// Post a notice or update (can_deploy only).
+router.post('/ventilator/beta/notices', requireAuth, requireVentilatorBeta, requireCanDeploy, async (req, res) => {
+  const { kind, severity, title, body } = req.body || {};
+  if (!title || String(title).trim().length < 2) {
+    return res.status(400).json({ ok: false, error: 'Title required' });
+  }
+  try {
+    const id = await insertNotice({
+      kind, severity, title: String(title).trim().slice(0, 200),
+      body: body ? String(body).slice(0, 4000) : null,
+      created_by: req.user.email,
+    });
+    res.json({ ok: true, id });
+  } catch (err) {
+    console.error('[beta] notice create error:', err.message);
+    res.status(500).json({ ok: false, error: 'Could not post' });
+  }
+});
+
+// Retire a notice/update (can_deploy only).
+router.post('/ventilator/beta/notices/:id/retire', requireAuth, requireVentilatorBeta, requireCanDeploy, async (req, res) => {
+  const id = parseInt(req.params.id, 10);
+  if (!id) return res.status(400).json({ ok: false, error: 'bad id' });
+  try {
+    await retireNotice(id);
+    res.json({ ok: true });
+  } catch (err) {
+    console.error('[beta] notice retire error:', err.message);
+    res.status(500).json({ ok: false, error: 'Could not retire' });
   }
 });
 
