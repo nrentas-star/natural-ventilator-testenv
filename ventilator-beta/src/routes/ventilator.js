@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { requireAuth, requireVentilatorBeta } from '../auth/middleware.js';
+import { cfg } from '../config.js';
 import { readFile } from 'fs/promises';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
@@ -23,6 +24,55 @@ router.get('/ventilator/app', requireAuth, requireVentilatorBeta, async (req, re
     res.send(html);
   } catch {
     res.status(503).send('Calculator not yet deployed. Contact Nestor.');
+  }
+});
+
+const EE_SEND_URL = 'https://api.elasticemail.com/v4/emails/transactional';
+
+// Email the signed-in user their calculator results (identity from JWT, not client input).
+router.post('/ventilator/email-results', requireAuth, requireVentilatorBeta, async (req, res) => {
+  const to = req.user.email;
+  const clip = (arr) => (Array.isArray(arr) ? arr : []).slice(0, 40)
+    .map(x => ({ label: String(x && x.label != null ? x.label : '').slice(0, 120),
+                 value: String(x && x.value != null ? x.value : '').slice(0, 120) }))
+    .filter(x => x.label && x.value);
+  const results = clip(req.body && req.body.results);
+  const inputs = clip(req.body && req.body.inputs);
+  if (!results.length) return res.status(400).json({ ok: false, error: 'No results to send' });
+
+  const esc = (str) => String(str == null ? '' : str)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const rows = (arr) => arr.map(x =>
+    `<tr><td style="padding:6px 10px;color:#6c757d;border-bottom:1px solid #eef2f7">${esc(x.label)}</td>`
+    + `<td style="padding:6px 10px;font-weight:600;border-bottom:1px solid #eef2f7">${esc(x.value)}</td></tr>`).join('');
+  const when = new Date().toISOString().replace('T', ' ').slice(0, 16) + ' UTC';
+  const html = [
+    '<div style="font-family:system-ui,sans-serif;max-width:600px;margin:0 auto;padding:24px;color:#0d1f3c">',
+    '<h2 style="margin:0 0 4px">Natural Ventilator Selector &mdash; Results</h2>',
+    `<div style="font-size:12px;color:#9aa4b2;margin-bottom:16px">Generated ${when}</div>`,
+    '<h3 style="margin:14px 0 6px;font-size:15px">Results</h3>',
+    `<table style="border-collapse:collapse;width:100%;font-size:14px;background:#f8fafc;border-radius:8px;overflow:hidden">${rows(results)}</table>`,
+    inputs.length ? `<h3 style="margin:18px 0 6px;font-size:15px">Inputs</h3><table style="border-collapse:collapse;width:100%;font-size:14px">${rows(inputs)}</table>` : '',
+    '<p style="margin:18px 0 0;font-size:12px;color:#6c757d">Sent from the Moffitt Natural Ventilator Selector (beta). Values are estimates for design guidance.</p>',
+    '</div>',
+  ].join('');
+
+  try {
+    const body = {
+      Recipients: { To: [to] },
+      Content: { From: cfg.EE_FROM, ReplyTo: cfg.EE_FROM, Subject: 'Your Natural Ventilator Selector results',
+        Body: [{ ContentType: 'HTML', Content: html }] },
+    };
+    const r = await fetch(EE_SEND_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-ElasticEmail-ApiKey': cfg.EE_API_KEY },
+      body: JSON.stringify(body),
+    });
+    if (!r.ok) throw new Error('EE ' + r.status);
+    res.json({ ok: true, to });
+  } catch (e) {
+    console.error('[ventilator] email-results error:', e.message);
+    res.status(502).json({ ok: false, error: 'Email service unavailable' });
   }
 });
 
