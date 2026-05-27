@@ -11,7 +11,9 @@ import {
   getNotices, insertNotice, retireNotice,
   insertTestCase, retireTestCase,
   recentBetaActivity,
+  getFeedbackById, getFeedbackResponses, resolveFeedback,
 } from '../db.js';
+import { cfg } from '../config.js';
 
 const TEST_AREAS = ['Heat Load','Airflow','Validation','Vent Type','Louver','Reset','Design Comparison','PDF Export','Feedback Widget'];
 
@@ -247,6 +249,64 @@ async function gitChangelog() {
 async function gitHead() {
   const { stdout } = await execFileP('git', ['-C', REPO, 'rev-parse', '--short', 'HEAD'], { timeout: 10000 });
   return stdout.trim();
+}
+
+// ── Resolve a feedback item + notify all reviewers (can_deploy only) ─────────
+const EE_SEND_URL = 'https://api.elasticemail.com/v4/emails/transactional';
+
+router.post('/ventilator/beta/feedback/:id/resolve', requireAuth, requireVentilatorBeta, requireCanDeploy, async (req, res) => {
+  const id = parseInt(req.params.id, 10);
+  const solution = String(req.body.solution || '').trim();
+  if (!id || solution.length < 3) {
+    return res.status(400).json({ ok: false, error: 'A solution note (3+ chars) is required' });
+  }
+  try {
+    const fb = await getFeedbackById(id);
+    if (!fb) return res.status(404).json({ ok: false, error: 'Feedback not found' });
+    await resolveFeedback({ id, resolved_by: req.user.email, solution });
+    const responses = await getFeedbackResponses(id);
+    sendResolutionEmail({ fb, responses, solution, resolved_by: req.user.email }).catch(e =>
+      console.error('[beta] resolution email error:', e.message));
+    res.json({ ok: true });
+  } catch (err) {
+    console.error('[beta] resolve error:', err.message);
+    res.status(500).json({ ok: false, error: 'Could not resolve' });
+  }
+});
+
+async function sendResolutionEmail({ fb, responses, solution, resolved_by }) {
+  const recipients = String(cfg.FEEDBACK_NOTIFY || '')
+    .split(',').map(s => s.trim()).filter(Boolean);
+  if (!recipients.length) return;
+  const subject = `[Ventilator Beta] Resolved: feedback #${fb.id}`;
+  const thread = (responses || []).map(r =>
+    `<div style="border-top:1px solid #eef2f7;padding:9px 0"><div style="font-size:12px;color:#6c757d">${escEmail(r.responder_email)} &middot; ${escEmail(String(r.created_at).slice(0,16).replace('T',' '))}</div><div style="white-space:pre-wrap;font-size:14px;margin-top:3px">${escEmail(r.body)}</div></div>`
+  ).join('');
+  const html = [
+    '<div style="font-family:system-ui,sans-serif;max-width:560px;margin:0 auto;padding:24px">',
+    `<h3 style="margin:0 0 6px;color:#0d1f3c">Feedback #${fb.id} resolved</h3>`,
+    `<div style="font-size:12px;color:#9aa4b2;margin-bottom:14px">${escEmail(fb.feedback_type)}${fb.area ? ' &middot; ' + escEmail(fb.area) : ''} &middot; from ${escEmail(fb.user_email)}</div>`,
+    `<div style="font-size:13px;color:#6c757d">Original report</div>`,
+    `<div style="white-space:pre-wrap;font-size:14px;margin:3px 0 14px">${escEmail(fb.description)}</div>`,
+    thread ? `<div style="font-size:13px;color:#6c757d">Responses</div>${thread}` : '',
+    `<div style="background:#e7f6ec;border-radius:10px;padding:13px;margin-top:16px"><div style="font-size:12px;font-weight:700;color:#16a34a;text-transform:uppercase;letter-spacing:.5px">Solution</div><div style="white-space:pre-wrap;font-size:14px;color:#0d1f3c;margin-top:4px">${escEmail(solution)}</div></div>`,
+    `<p style="margin:14px 0 0;font-size:12px;color:#6c757d">Resolved by ${escEmail(resolved_by)}.</p>`,
+    '</div>',
+  ].join('');
+  const body = {
+    Recipients: { To: recipients },
+    Content: { From: cfg.EE_FROM, ReplyTo: cfg.EE_FROM, Subject: subject, Body: [{ ContentType: 'HTML', Content: html }] },
+  };
+  const r = await fetch(EE_SEND_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'X-ElasticEmail-ApiKey': cfg.EE_API_KEY },
+    body: JSON.stringify(body),
+  });
+  if (!r.ok) throw new Error(`EE ${r.status}`);
+}
+
+function escEmail(s) {
+  return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }
 
 export default router;

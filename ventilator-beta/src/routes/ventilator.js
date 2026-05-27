@@ -125,6 +125,15 @@ body{font-family:'Inter',system-ui,sans-serif;background:#f0f4f8;color:#0d1f3c;h
 .badge.open{background:#fff4e5;color:#b45309}.badge.resolved{background:#e7f6ec;color:#16a34a}
 .item .desc{color:#475467;line-height:1.45;white-space:pre-wrap}
 .item .meta{color:#9aa4b2;font-size:11px;margin-top:4px}
+.fbthread{margin-top:8px;padding-left:10px;border-left:2px solid #e5e9f0}
+.fbresp{padding:4px 0}
+.fbresp-h{font-size:11px;color:#6c757d}
+.fbresp-b{font-size:13px;color:#475467;white-space:pre-wrap;line-height:1.4}
+.fbsol{margin-top:8px;background:#e7f6ec;border-radius:8px;padding:8px 10px;font-size:13px;color:#0d1f3c;white-space:pre-wrap}
+.fbsol span{display:block;font-size:10px;font-weight:700;color:#16a34a;text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px}
+.fbresolve{margin-top:8px;background:#0d1f3c;color:#fff;border:none;cursor:pointer;font-family:inherit;font-size:12px;font-weight:600;padding:7px 12px;border-radius:7px}
+.fbresolve:hover{background:#1a3050}
+.fbresolve:disabled{opacity:.6;cursor:default}
 
 .commit{display:flex;gap:10px;padding:8px 0;border-bottom:1px solid #f0f4f8;font-size:12px}
 .commit .h{font-family:ui-monospace,monospace;color:#e07c24;font-weight:600}
@@ -390,14 +399,46 @@ async function saveRun(test_key, status, notes) {
 function renderFeedback() {
   const list = DATA.feedback||[];
   if (!list.length) { $('#fbList').innerHTML = '<div class="muted">No reports yet.</div>'; return; }
-  $('#fbList').innerHTML = list.map(f =>
-    '<div class="item"><div class="top">'
-    + '<span><span class="badge '+esc(f.feedback_type)+'">'+esc(f.feedback_type)+'</span> '
-    + (f.area?'<span style="font-size:11px;color:#6c757d">'+esc(f.area)+'</span>':'')+'</span>'
-    + '<span class="badge '+(f.resolved?'resolved':'open')+'">'+(f.resolved?'Resolved':'Open')+'</span>'
-    + '</div><div class="desc">'+esc(f.description)+'</div>'
-    + '<div class="meta">#'+f.id+' · '+esc(String(f.created_at).slice(0,16).replace('T',' '))+'</div></div>'
-  ).join('');
+  $('#fbList').innerHTML = list.map(f => {
+    const resps = (f.responses||[]).map(r =>
+      '<div class="fbresp"><div class="fbresp-h">'+esc(r.responder_email)+' · '+esc(String(r.created_at).slice(0,16).replace('T',' '))+'</div><div class="fbresp-b">'+esc(r.body)+'</div></div>'
+    ).join('');
+    const sol = f.solution ? '<div class="fbsol"><span>Solution</span>'+esc(f.solution)+'</div>' : '';
+    const btn = (CAN_DEPLOY && !f.resolved) ? '<button class="fbresolve" data-id="'+f.id+'">Mark resolved + notify</button>' : '';
+    return '<div class="item"><div class="top">'
+      + '<span><span class="badge '+esc(f.feedback_type)+'">'+esc(f.feedback_type)+'</span> '
+      + (f.area?'<span style="font-size:11px;color:#6c757d">'+esc(f.area)+'</span>':'')+'</span>'
+      + '<span class="badge '+(f.resolved?'resolved':'open')+'">'+(f.resolved?'Resolved':'Open')+'</span>'
+      + '</div><div class="desc">'+esc(f.description)+'</div>'
+      + (resps?'<div class="fbthread">'+resps+'</div>':'')
+      + sol
+      + '<div class="meta">#'+f.id+' · '+esc(String(f.created_at).slice(0,16).replace('T',' '))+'</div>'
+      + btn
+      + '</div>';
+  }).join('');
+  document.querySelectorAll('.fbresolve').forEach(b => b.addEventListener('click', onResolveClick));
+}
+
+async function onResolveClick(e) {
+  const btn = e.target, id = btn.getAttribute('data-id');
+  const solution = window.prompt('Describe the fix / solution. This marks the item resolved and emails the thread to all reviewers:');
+  if (!solution || solution.trim().length < 3) return;
+  btn.disabled = true; btn.textContent = 'Sending...';
+  try {
+    const r = await fetch('/ventilator/beta/feedback/'+id+'/resolve', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ solution: solution.trim() }) });
+    const j = await r.json();
+    if (j && j.ok) {
+      const f = (DATA.feedback||[]).find(x => String(x.id) === String(id));
+      if (f) { f.resolved = 1; f.solution = solution.trim(); }
+      renderFeedback();
+    } else {
+      alert((j && j.error) || 'Could not resolve'); btn.disabled = false; btn.textContent = 'Mark resolved + notify';
+    }
+  } catch (_) {
+    alert('Network error'); btn.disabled = false; btn.textContent = 'Mark resolved + notify';
+  }
 }
 
 $('#fbSubmit').addEventListener('click', async () => {

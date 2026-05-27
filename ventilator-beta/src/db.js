@@ -86,14 +86,66 @@ export async function upsertTestRun(email, test_key, status, notes) {
   );
 }
 
-/** A user's own submitted feedback with resolved status. */
+/** A user's own submitted feedback with resolved status, including any responses. */
 export async function getUserFeedback(email) {
   const [rows] = await getPool().execute(
-    `SELECT id, feedback_type, area, description, resolved, created_at
+    `SELECT id, feedback_type, area, description, resolved, solution, created_at
      FROM ventilator_feedback WHERE user_email = ? ORDER BY created_at DESC LIMIT 100`,
     [email.toLowerCase()]
   );
+  if (rows.length) {
+    const ids = rows.map(r => r.id);
+    const [resp] = await getPool().query(
+      `SELECT feedback_id, responder_email, body, source, created_at
+         FROM ventilator_feedback_responses
+        WHERE feedback_id IN (?) ORDER BY created_at ASC`,
+      [ids]
+    );
+    const byId = {};
+    for (const r of resp) (byId[r.feedback_id] = byId[r.feedback_id] || []).push(r);
+    for (const row of rows) row.responses = byId[row.id] || [];
+  }
   return rows;
+}
+
+/** A single feedback row by id (no responses attached). */
+export async function getFeedbackById(id) {
+  const [rows] = await getPool().execute(
+    `SELECT id, user_email, feedback_type, area, description, resolved, solution, created_at
+       FROM ventilator_feedback WHERE id = ? LIMIT 1`,
+    [id]
+  );
+  return rows.length ? rows[0] : null;
+}
+
+/** All responses for one feedback id, oldest first. */
+export async function getFeedbackResponses(feedbackId) {
+  const [rows] = await getPool().execute(
+    `SELECT id, feedback_id, responder_email, body, source, created_at
+       FROM ventilator_feedback_responses WHERE feedback_id = ? ORDER BY created_at ASC`,
+    [feedbackId]
+  );
+  return rows;
+}
+
+/** Insert a response/note against a feedback item. */
+export async function insertFeedbackResponse({ feedback_id, responder_email, body, source }) {
+  const [result] = await getPool().execute(
+    `INSERT INTO ventilator_feedback_responses (feedback_id, responder_email, body, source)
+     VALUES (?, ?, ?, ?)`,
+    [feedback_id, responder_email, body, source || 'email']
+  );
+  return result.insertId;
+}
+
+/** Mark a feedback item resolved with a solution note. */
+export async function resolveFeedback({ id, resolved_by, solution }) {
+  await getPool().execute(
+    `UPDATE ventilator_feedback
+        SET resolved = 1, resolved_by = ?, resolved_at = NOW(), solution = ?
+      WHERE id = ?`,
+    [resolved_by, solution, id]
+  );
 }
 
 /** Record a deploy in the audit log. */
