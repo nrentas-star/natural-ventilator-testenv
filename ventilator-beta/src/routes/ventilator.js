@@ -237,12 +237,14 @@ a:hover{text-decoration:underline}
 .compose textarea{resize:vertical;min-height:52px}
 .compose .row{display:flex;gap:8px}.compose .row>*{flex:1}
 
-/* Activity ticker — sky accent label, navy body on white header */
-.acttick{display:none;position:absolute;left:50%;top:0;height:80px;transform:translateX(-50%);align-items:center;justify-content:center;text-align:center;gap:12px;max-width:42%;font-size:12px;color:#003055;pointer-events:none}
+/* Activity ticker — right-justified between spacer and user info (uses flex order, not absolute) */
+.acttick{display:none;order:5;align-items:center;justify-content:flex-end;text-align:right;gap:10px;max-width:30%;font-size:12px;color:#003055;pointer-events:none;white-space:nowrap;overflow:hidden;margin-right:8px;padding-right:12px;border-right:1px solid #e2e4e6}
 .acttick.show{display:flex}
+.header__user{order:10}
 .acttick__label{flex-shrink:0;color:#1e7fae;font-weight:600;letter-spacing:.14em;font-size:10px;text-transform:uppercase}
 .acttick__item{transition:opacity .22s;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:300}
-@media(max-width:980px){.acttick{display:none !important}.header{padding:12px 20px;height:auto;flex-wrap:wrap;gap:8px}.header__breadcrumb{display:none}}
+@media(max-width:1100px){.acttick{display:none !important}}
+@media(max-width:980px){.header{padding:12px 20px;height:auto;flex-wrap:wrap;gap:8px}.header__breadcrumb{display:none}}
 </style>
 </head>
 <body>
