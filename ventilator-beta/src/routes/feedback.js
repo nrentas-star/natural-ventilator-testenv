@@ -193,11 +193,15 @@ function pageShell(title, inner) {
   return `<!doctype html><html lang="en"><head><meta charset="utf-8">`
     + `<meta name="viewport" content="width=device-width,initial-scale=1">`
     + `<title>${escHtml(title)} &middot; Ventilator Beta</title>`
-    + `<style>body{margin:0;background:#eef2f7;font-family:'Inter',system-ui,sans-serif;color:#0d1f3c}`
-    + `.wrap{max-width:600px;margin:40px auto;padding:0 16px}`
-    + `.card{background:#fff;border-radius:14px;padding:26px;box-shadow:0 2px 14px rgba(13,31,60,.08)}`
-    + `.hd{background:#0d1f3c;color:#fff;border-radius:14px 14px 0 0;padding:16px 26px;margin:-26px -26px 20px;font-weight:700}`
-    + `</style></head><body><div class="wrap"><div class="card"><div class="hd">Natural Ventilator Selector &mdash; Beta</div>`
+    + `<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&display=swap" rel="stylesheet">`
+    + `<style>body{margin:0;background:#fff;font-family:'Montserrat','Helvetica Neue',Helvetica,Arial,sans-serif;font-weight:300;color:#003055;font-size:16px;line-height:24px;-webkit-font-smoothing:antialiased}`
+    + `.wrap{max-width:640px;margin:48px auto;padding:0 20px}`
+    + `.card{background:#fff;border:1px solid #e2e4e6;border-top:4px solid #57cef6;border-radius:5px;padding:32px;box-shadow:0 4px 12px rgba(0,48,85,.08)}`
+    + `.hd{display:flex;align-items:center;gap:14px;margin:0 0 24px 0;padding-bottom:18px;border-bottom:1px solid #e2e4e6}`
+    + `.hd img{height:44px;width:auto;display:block}`
+    + `.hd-title{font-family:'Montserrat',sans-serif;font-size:14px;font-weight:600;color:#003055;text-transform:uppercase;letter-spacing:.12em;padding-left:14px;border-left:2px solid #57cef6;line-height:1.3}`
+    + `p{font-size:15px;color:#003055;line-height:1.6;margin-bottom:12px;font-weight:300}`
+    + `</style></head><body><div class="wrap"><div class="card"><div class="hd"><img src="https://connect.moffittcorp.com/static/logo" alt="Moffitt"><div class="hd-title">Natural Ventilator Selector<br>Beta</div></div>`
     + inner + `</div></div></body></html>`;
 }
 
