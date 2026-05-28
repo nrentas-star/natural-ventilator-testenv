@@ -21,7 +21,7 @@
     .row{display:flex;gap:12px;flex-wrap:wrap}
     .field{flex:1 1 180px;min-width:220px}
     label{display:block;font-size:15px;color:var(--muted);margin:4px 0}
-    input,select{width:100%;padding:10px 12px;border-radius:10px;background:var(--surface2);color:var(--text);border:1px solid var(--border2);outline:none;font-size:17px}
+    input,select{box-sizing:border-box;width:100%;padding:10px 12px;border-radius:10px;background:var(--surface2);color:var(--text);border:1px solid var(--border2);outline:none;font-size:17px}
     input:focus,select:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(0,88,154,.18)}
     .actions{display:flex;gap:12px;flex-wrap:wrap;margin-top:12px}
     button{background:var(--accent);color:#ffffff;border:none;border-radius:10px;padding:10px 14px;font-weight:800;cursor:pointer}
@@ -122,7 +122,7 @@
 
         <div class="row">
           <div class="field">
-            <label>Temperature rise, T (°F)
+            <label>Temperature rise, ΔT (°F)
               <button type="button" class="help-btn" aria-label="Temperature rise help" onclick="showTempRiseHelp(event)">?</button>
             </label>
             <input id="dt" type="number" step="1" min="1" value="" placeholder=""/>
@@ -247,7 +247,7 @@
           <hr/>
           <h2 style="margin:0 0 8px">Compare 2 designs</h2>
           <div class="actions" style="margin-top:8px">
-            <button type="button" class="secondary" id="swapAB" onclick="swapCompare()">Swap A  B</button>
+            <button type="button" class="secondary" id="swapAB" onclick="swapCompare()">Swap A ↔ B</button>
             <button type="button" class="secondary" id="clearCompare" onclick="clearCompare()">Clear</button>
           </div>
           <div class="small" id="compareNote" style="margin-top:8px"></div>
@@ -407,7 +407,7 @@
 
     const dT = parseFloat(document.getElementById('dt').value);
     if(!isFinite(dT) || !(dT > 0)){
-      msg.innerHTML = '<span class="bad">Enter a positive temperature rise (T).</span>';
+      msg.innerHTML = '<span class="bad">Enter a positive temperature rise (ΔT).</span>';
       return;
     }
 
@@ -422,7 +422,7 @@
       }
       CFM = Heat / (1.08 * dT);
       if(!isFinite(CFM) || !(CFM > 0)){
-        msg.innerHTML = '<span class="bad">Calculated Airflow is invalid. Check Heat Load and T.</span>';
+        msg.innerHTML = '<span class="bad">Calculated Airflow is invalid. Check Heat Load and ΔT.</span>';
         return;
       }
       document.getElementById('cfm').value = fmt0(Math.round(CFM));
@@ -447,7 +447,7 @@
     const TeR = Te + 459.67;
     const ratio = (TiR - TeR) / TiR;
     if(!(ratio > 0)){
-      msg.innerHTML = '<span class="bad">Temperature ratio is invalid (check T).</span>';
+      msg.innerHTML = '<span class="bad">Temperature ratio is invalid (check ΔT).</span>';
       return;
     }
 
@@ -594,7 +594,7 @@ function saveDesign(slot){
     if(note) note.textContent = `A saved: ${haveA?A.savedAt:''}  |  B saved: ${haveB?B.savedAt:''}`;
 
     addRow(tbody, 'Method', haveA?(A.method==='heat'?'Heat Load Method':'Airflow Method'):'', haveB?(B.method==='heat'?'Heat Load Method':'Airflow Method'):'');
-    addRow(tbody, 'T (°F)', haveA?A.dt:'', haveB?B.dt:'');
+    addRow(tbody, 'ΔT (°F)', haveA?A.dt:'', haveB?B.dt:'');
     addRow(tbody, 'Heat Load (BTU/h)', haveA?A.heat:'', haveB?B.heat:'');
     addRow(tbody, 'Airflow (CFM)', haveA?A.airflow:'', haveB?B.airflow:'');
     addRow(tbody, 'Vent Type', haveA?A.ventType:'', haveB?B.ventType:'');
