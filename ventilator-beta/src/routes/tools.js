@@ -55,55 +55,72 @@ function toolsPage({ first_name, roleLabel, ventilator_beta }) {
 <head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Moffitt Tools</title>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'Inter',system-ui,sans-serif;background:#f0f4f8;color:#0d1f3c;min-height:100vh;display:flex;flex-direction:column}
-.header{background:#0d1f3c;height:64px;display:flex;align-items:center;padding:0 28px;gap:16px;flex-shrink:0}
-.header__logo{display:flex;align-items:center;gap:12px;text-decoration:none}
-.header__logo-pill{background:#fff;border-radius:6px;padding:4px 10px;font-weight:700;font-size:13px;color:#0d1f3c;letter-spacing:.5px}
-.header__section{font-size:11px;font-weight:600;letter-spacing:2px;color:rgba(255,255,255,.45);text-transform:uppercase}
-.header__back{font-size:12px;font-weight:500;color:rgba(255,255,255,.6);text-decoration:none;display:inline-flex;align-items:center;gap:5px}
-.header__back:hover{color:#fff}
-.header__sep{color:rgba(255,255,255,.2);margin:0 4px}
+body{font-family:'Montserrat','Helvetica Neue',Helvetica,Arial,sans-serif;font-weight:300;background:#fff;color:#003055;min-height:100vh;display:flex;flex-direction:column;font-size:16px;line-height:24px;-webkit-font-smoothing:antialiased}
+a{color:#003055;text-decoration:none}
+a:hover{text-decoration:underline}
+/* MASTHEAD — white, 80px, 2px SKY-BLUE underline (Tools accent) */
+.header{background:#fff;height:80px;display:flex;align-items:center;padding:0 32px;gap:16px;flex-shrink:0;border-bottom:2px solid #57cef6}
+.header__logo{display:flex;align-items:center;gap:14px;text-decoration:none}
+.header__logo img{height:52px;width:auto;display:block}
+.header__logo-pill{display:none}
+.header__section{font-size:11px;font-weight:600;letter-spacing:.16em;color:#1e7fae;text-transform:uppercase;padding-left:14px;border-left:2px solid #57cef6}
+.header__back{font-size:11px;font-weight:600;color:#737373;text-decoration:none;display:inline-flex;align-items:center;gap:5px;letter-spacing:.08em;text-transform:uppercase}
+.header__back:hover{color:#003055;text-decoration:underline}
+.header__sep{color:#cad6e3;margin:0 4px}
 .header__spacer{flex:1}
-.header__user{display:flex;align-items:center;gap:10px}
-.header__role{font-size:11px;font-weight:600;letter-spacing:1px;color:rgba(255,255,255,.5);text-transform:uppercase}
-.header__name{font-size:14px;font-weight:500;color:#fff}
-.header__avatar{width:32px;height:32px;border-radius:50%;background:#e07c24;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#fff}
-.main{flex:1;padding:40px 28px 32px;max-width:1100px;width:100%;margin:0 auto}
-.page-hero{margin-bottom:36px}
-.page-hero__eyebrow{font-size:11px;font-weight:700;letter-spacing:2px;color:#6c757d;text-transform:uppercase;margin-bottom:8px}
-.page-hero__accent{display:inline-block;width:32px;height:3px;background:#e07c24;border-radius:2px;margin-bottom:12px}
-.page-hero h1{font-size:28px;font-weight:700;color:#0d1f3c}
-.tool-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:20px}
-.tool-card{background:#fff;border-radius:10px;overflow:hidden;text-decoration:none;color:inherit;box-shadow:0 1px 3px rgba(0,0,0,.07);transition:box-shadow .15s,transform .15s;display:flex;flex-direction:column}
-.tool-card:hover{box-shadow:0 4px 16px rgba(0,0,0,.12);transform:translateY(-2px)}
-.tool-card__accent{height:4px}
-.tool-card__body{padding:24px;display:flex;align-items:flex-start;gap:16px;flex:1}
-.tool-card__icon{flex-shrink:0;width:48px;height:48px;border-radius:10px;background:#fff8f0;display:flex;align-items:center;justify-content:center}
+.header__user{display:flex;align-items:center;gap:12px}
+.header__role{font-size:10px;font-weight:600;letter-spacing:.1em;color:#737373;text-transform:uppercase}
+.header__name{font-size:13px;font-weight:500;color:#003055}
+.header__avatar{width:38px;height:38px;border-radius:50%;background:#003055;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600;color:#fff}
+/* MAIN + HERO (centered) */
+.main{flex:1;padding:56px 32px 32px;max-width:1200px;width:100%;margin:0 auto}
+.page-hero{margin-bottom:40px;text-align:center}
+.page-hero__eyebrow{font-size:11px;font-weight:600;letter-spacing:.18em;color:#737373;text-transform:uppercase;margin-bottom:14px}
+.page-hero__accent{display:none}
+.page-hero h1{font-family:'Montserrat',sans-serif;font-size:42px;font-weight:300;color:#003055;text-transform:uppercase;letter-spacing:.02em;line-height:1.1}
+/* TOOL CARDS */
+.tool-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:24px}
+.tool-card{background:#fff;border:1px solid #e2e4e6;border-radius:5px;overflow:hidden;text-decoration:none;color:inherit;box-shadow:0 1px 2px rgba(0,48,85,.05);transition:box-shadow .15s,transform .15s,border-color .15s;display:flex;flex-direction:column;position:relative}
+.tool-card::before{content:"";position:absolute;top:0;left:0;right:0;height:4px;background:#57cef6}
+.tool-card:hover{box-shadow:0 4px 12px rgba(0,48,85,.08);transform:translateY(-2px);border-color:#cad6e3;text-decoration:none}
+.tool-card__accent{display:none}
+.tool-card__body{padding:28px;display:flex;align-items:flex-start;gap:18px;flex:1}
+.tool-card__icon{flex-shrink:0;width:52px;height:52px;border-radius:5px;background:#dfeff5;display:flex;align-items:center;justify-content:center;color:#003055}
 .tool-card__info{flex:1}
-.tool-card__name{font-size:15px;font-weight:700;color:#0d1f3c;margin-bottom:6px}
-.tool-card__desc{font-size:13px;color:#6c757d;line-height:1.5}
-.tool-card__footer{padding:14px 24px;border-top:1px solid #f0f4f8;display:flex;justify-content:flex-end}
-.tool-card__open{font-size:13px;font-weight:600;color:#0d1f3c;display:flex;align-items:center;gap:6px}
-.badge{display:inline-flex;align-items:center;padding:3px 8px;border-radius:4px;font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;flex-shrink:0}
-.badge--amber{background:#fff8f0;color:#e07c24;border:1px solid #e07c24}
-.empty-state{text-align:center;padding:80px 32px;color:#6c757d}
-.empty-state svg{margin:0 auto 16px;display:block}
-.empty-state p{font-size:15px;margin-bottom:6px}
-.empty-state__sub{font-size:13px}
-.empty-state__sub a{color:#2563eb}
-.footer{background:#0d1f3c;height:48px;display:flex;align-items:center;padding:0 28px;flex-shrink:0}
-.footer__text{font-size:12px;color:rgba(255,255,255,.35)}
+.tool-card__name{font-family:'Montserrat',sans-serif;font-size:18px;font-weight:600;color:#003055;margin-bottom:8px;text-transform:uppercase;letter-spacing:.04em;line-height:1.2}
+.tool-card__desc{font-size:14px;color:#003055;line-height:1.55;font-weight:300}
+.tool-card__footer{padding:14px 28px;border-top:1px solid #e2e4e6;display:flex;justify-content:flex-end}
+.tool-card__open{font-size:11px;font-weight:600;color:#1e7fae;display:flex;align-items:center;gap:6px;text-transform:uppercase;letter-spacing:.08em}
+/* BADGES */
+.badge{display:inline-flex;align-items:center;padding:3px 10px;border-radius:9999px;font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;flex-shrink:0;border:0}
+.badge--amber{background:#fff3d6;color:#8a6500;border:0}
+/* EMPTY STATE */
+.empty-state{text-align:center;padding:80px 32px;color:#737373}
+.empty-state svg{margin:0 auto 18px;display:block;stroke:#9aa6b3}
+.empty-state p{font-size:16px;margin-bottom:6px;font-weight:400;color:#003055}
+.empty-state__sub{font-size:13px;font-weight:300}
+.empty-state__sub a{color:#003055;font-weight:500}
+/* FOOTER — navy with sky-blue top stroke */
+.footer{background:#003055;color:#cfe2f3;padding:20px 32px;border-top:4px solid #57cef6;display:flex;align-items:center;flex-shrink:0;font-weight:300}
+.footer__text{font-size:13px;color:#cfe2f3}
 .footer__spacer{flex:1}
-.footer__logout{background:none;border:none;cursor:pointer;font-size:12px;color:rgba(255,255,255,.35);font-family:inherit;padding:0}
-.footer__logout:hover{color:rgba(255,255,255,.65)}
+.footer__logout{background:none;border:none;cursor:pointer;font-size:11px;color:#cfe2f3;font-family:inherit;padding:0;letter-spacing:.06em;text-transform:uppercase;font-weight:500}
+.footer__logout:hover{color:#fff;text-decoration:underline}
+@media (max-width:980px){
+  .header{padding:12px 20px;height:auto;flex-wrap:wrap;gap:8px}
+  .header__section{display:none}
+  .main{padding:32px 20px}
+  .page-hero h1{font-size:30px}
+  .tool-grid{grid-template-columns:1fr}
+}
 </style>
 </head>
 <body>
 <header class="header">
-  <a href="https://connect.moffittcorp.com/" class="header__logo"><span class="header__logo-pill">MOFFITT</span></a>
+  <a href="https://connect.moffittcorp.com/" class="header__logo"><img src="https://connect.moffittcorp.com/static/logo" alt="Moffitt"></a>
   <a href="https://connect.moffittcorp.com/" class="header__back">&#8592; Connect</a>
   <span class="header__sep">/</span>
   <span class="header__section">TOOLS</span>

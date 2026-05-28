@@ -85,34 +85,43 @@ function shell(title, body) {
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>${title} — Moffitt Connect</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: 'Inter', system-ui, sans-serif; background: #f0f4f8; min-height: 100vh;
-         display: flex; align-items: center; justify-content: center; }
-  .card { background: #fff; border-radius: 10px; padding: 40px 36px; width: 100%; max-width: 420px;
-          box-shadow: 0 1px 4px rgba(0,0,0,.08), 0 4px 16px rgba(0,0,0,.06); }
-  .brand { font-size: 11px; font-weight: 700; letter-spacing: 1.5px; color: #6c757d;
-           text-transform: uppercase; margin-bottom: 8px; }
-  .brand span { color: #0d1f3c; }
-  h1 { font-size: 22px; font-weight: 700; color: #0d1f3c; margin-bottom: 6px; }
-  .subtitle { font-size: 14px; color: #6c757d; margin-bottom: 28px; }
-  label { display: block; font-size: 13px; font-weight: 600; color: #374151; margin-bottom: 6px; }
-  input { width: 100%; padding: 10px 14px; border: 1.5px solid #d1d5db; border-radius: 6px;
-          font-size: 15px; font-family: inherit; outline: none; transition: border-color .15s; }
-  input:focus { border-color: #0d1f3c; }
-  input.code { letter-spacing: 6px; font-size: 22px; text-align: center; font-family: monospace; }
-  .btn { display: block; width: 100%; padding: 11px; margin-top: 18px; background: #0d1f3c;
-         color: #fff; border: none; border-radius: 6px; font-size: 15px; font-weight: 600;
-         font-family: inherit; cursor: pointer; transition: background .15s; }
-  .btn:hover { background: #162d54; }
-  .error { background: #fef2f2; border: 1px solid #fecaca; color: #b91c1c; padding: 10px 14px;
-           border-radius: 6px; font-size: 13px; margin-bottom: 18px; }
-  .back-link { display: block; text-align: center; margin-top: 16px; font-size: 13px;
-               color: #6c757d; text-decoration: none; }
-  .back-link:hover { color: #0d1f3c; }
+  body { font-family: 'Montserrat','Helvetica Neue',Helvetica,Arial,sans-serif; font-weight: 300;
+         background: #fff; color: #003055; min-height: 100vh; display: flex; align-items: center;
+         justify-content: center; padding: 32px; font-size: 16px; line-height: 24px;
+         -webkit-font-smoothing: antialiased; }
+  .card { background: #fff; border: 1px solid #e2e4e6; border-top: 4px solid #57cef6;
+          border-radius: 5px; padding: 40px 36px; width: 100%; max-width: 420px;
+          box-shadow: 0 4px 12px rgba(0,48,85,.08); }
+  .brand { display: flex; align-items: center; justify-content: center; margin-bottom: 22px; }
+  .brand img { height: 52px; width: auto; display: block; }
+  h1 { font-family: 'Montserrat',sans-serif; font-size: 21px; font-weight: 400; color: #003055;
+       text-transform: uppercase; letter-spacing: .04em; margin-bottom: 6px; text-align: center; }
+  .subtitle { font-size: 13px; color: #737373; margin-bottom: 26px; text-align: center;
+              font-weight: 400; line-height: 1.5; }
+  label { display: block; font-size: 11px; font-weight: 600; color: #003055; margin-bottom: 8px;
+          letter-spacing: .08em; text-transform: uppercase; }
+  input { width: 100%; padding: 13px 16px; border: 1px solid #e2e4e6; border-radius: 5px;
+          font-size: 15px; font-family: inherit; outline: none; transition: border-color .15s;
+          color: #003055; font-weight: 400; background: #fff; }
+  input:focus { border-color: #003055; }
+  input.code { letter-spacing: 8px; font-size: 22px; text-align: center;
+               font-family: ui-monospace,SFMono-Regular,Menlo,monospace; font-weight: 600; }
+  .btn { display: block; width: 100%; padding: 13px; margin-top: 20px; background: #003055;
+         color: #fff; border: none; border-radius: 5px; font-size: 13px; font-weight: 600;
+         font-family: inherit; cursor: pointer; transition: background .15s;
+         letter-spacing: .06em; text-transform: uppercase; }
+  .btn:hover { background: #0f3168; }
+  .error { background: #fde8e8; border: 1px solid #f5b3b3; color: #e80000; padding: 10px 14px;
+           border-radius: 5px; font-size: 13px; margin-bottom: 18px; font-weight: 400; }
+  .back-link { display: block; text-align: center; margin-top: 18px; font-size: 11px;
+               color: #737373; text-decoration: none; letter-spacing: .06em;
+               text-transform: uppercase; font-weight: 500; }
+  .back-link:hover { color: #003055; text-decoration: underline; }
 </style></head><body><div class="card">
-<div class="brand"><span>MOFFITT</span> CONNECT</div>
+<div class="brand"><img src="https://connect.moffittcorp.com/static/logo" alt="Moffitt"></div>
 ${body}
 </div></body></html>`;
 }
